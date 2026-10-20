@@ -1,0 +1,6 @@
+import { Render } from "@puckeditor/core/rsc";
+import type { Project } from "../project-schema/project";
+import { puckConfig, toPuckData } from "../editor/puck-config";
+export function ProjectRenderer({ project }: { project: Project }) {
+  return <Render config={puckConfig} data={toPuckData(project)} />;
+}
