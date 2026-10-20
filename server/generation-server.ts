@@ -1,6 +1,14 @@
 import { createServer, type IncomingMessage } from "node:http";
 import { randomBytes, randomUUID } from "node:crypto";
 import { ProviderError } from "./provider-error";
+import type { BackendEditProvider } from "./edit-provider";
+import { assertEditTargets } from "./edit-validation";
+import {
+  EDIT_LIMITS,
+  editRequestSchema,
+  editResultSchema,
+  editStatusSchema,
+} from "../src/ai/edit-contract";
 import { ModelRouterTimeout } from "./model-router";
 import { modelRoutingSchema, type ModelRouting } from "../src/ai/model-routing";
 import type { ProviderHttpDiagnostics } from "../src/ai/provider-http";
@@ -29,6 +37,10 @@ export type GenerationEvent =
 export interface GenerationServerOptions {
   onGenerationEvent?: (event: GenerationEvent) => void;
   provider?: WebsiteGenerationProvider;
+  editProvider?: BackendEditProvider;
+  editLimits?: Partial<
+    Record<"requestBytes" | "responseBytes" | "timeoutMs", number>
+  >;
   allowedOrigins?: readonly string[];
   requestBytes?: number;
   responseBytes?: number;
@@ -48,10 +60,13 @@ class HttpError extends Error {
     super(message);
   }
 }
-async function readRequest(
+async function readRequest<T>(
   req: IncomingMessage,
   limit: number,
   signal: AbortSignal,
+  schema: { parse(value: unknown): T },
+  invalidMessage: string,
+  strictUtf8 = false,
 ) {
   const tooLarge = () =>
     new HttpError(413, "REQUEST_TOO_LARGE", "Request is too large.");
@@ -81,7 +96,16 @@ async function readRequest(
     };
     const end = () => {
       cleanup();
-      resolve(Buffer.concat(chunks).toString("utf8"));
+      const body = Buffer.concat(chunks);
+      try {
+        resolve(
+          strictUtf8
+            ? new TextDecoder("utf-8", { fatal: true }).decode(body)
+            : body.toString("utf8"),
+        );
+      } catch {
+        reject(new HttpError(400, "INVALID_REQUEST", invalidMessage));
+      }
     };
     if (signal.aborted) {
       reject(signal.reason);
@@ -93,9 +117,9 @@ async function readRequest(
     signal.addEventListener("abort", abort, { once: true });
   });
   try {
-    return websiteGenerationRequestSchema.parse(JSON.parse(raw));
+    return schema.parse(JSON.parse(raw));
   } catch {
-    throw new HttpError(400, "INVALID_REQUEST", "Invalid generation request.");
+    throw new HttpError(400, "INVALID_REQUEST", invalidMessage);
   }
 }
 /** Race every operation, including non-cooperative injected providers. Late settlement is ignored. */
@@ -122,6 +146,25 @@ function abortable<T>(
 export function createGenerationServer(options: GenerationServerOptions = {}) {
   const sessionToken = randomBytes(32).toString("hex");
   const provider = options.provider;
+  const editProvider = options.editProvider;
+  if (editProvider && editProvider.id !== "synthetic")
+    throw new Error("Only synthetic edit providers are supported.");
+  const editCeilings = {
+    requestBytes: EDIT_LIMITS.requestBytes,
+    responseBytes: EDIT_LIMITS.responseBytes,
+    timeoutMs: EDIT_LIMITS.timeoutMs,
+  };
+  const editLimits = { ...editCeilings, ...options.editLimits };
+  for (const key of Object.keys(
+    editCeilings,
+  ) as (keyof typeof editCeilings)[]) {
+    if (
+      !Number.isSafeInteger(editLimits[key]) ||
+      editLimits[key] < 1 ||
+      editLimits[key] > editCeilings[key]
+    )
+      throw new Error("Invalid edit limits.");
+  }
   const mode = provider
     ? provider.id === "mock"
       ? "mock"
@@ -135,6 +178,7 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
   let pendingProviders = 0;
   let admissions: number[] = [];
   return createServer(async (req, res) => {
+    const editing = req.url === "/api/edit/propose";
     let admitted = false;
     const observed = req.method === "POST" && req.url === "/api/generate";
     const requestId = randomUUID();
@@ -239,6 +283,10 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
       const origin = req.headers.origin;
       if (
         req.headers.host !== `127.0.0.1:${req.socket.localPort}` ||
+        ((editing || req.url === "/api/edit/status") &&
+          !["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(
+            req.socket.remoteAddress ?? "",
+          )) ||
         (origin !== undefined && !origins.includes(origin)) ||
         req.headers["sec-fetch-site"] === "cross-site"
       )
@@ -247,11 +295,28 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
         res.setHeader("Access-Control-Allow-Origin", origin);
         res.setHeader("Vary", "Origin");
       }
+      if (req.url === "/api/edit/status") {
+        if (req.method !== "GET")
+          throw new HttpError(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "Method is not allowed.",
+          );
+        send(
+          200,
+          editStatusSchema.parse(
+            editProvider
+              ? { mode: "mock", provider: "synthetic", sessionToken }
+              : { mode: "disabled", provider: null, sessionToken },
+          ),
+        );
+        return;
+      }
       if (req.method === "GET" && req.url === "/api/generation/status") {
         send(200, { mode, model: provider?.model ?? "", sessionToken });
         return;
       }
-      if (req.url !== "/api/generate")
+      if (req.url !== "/api/generate" && !editing)
         throw new HttpError(404, "NOT_FOUND", "Endpoint not found.");
       if (req.method === "OPTIONS") {
         if (!origin)
@@ -283,7 +348,9 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
           "UNSUPPORTED_MEDIA_TYPE",
           "Content-Type must be application/json.",
         );
-      if (!provider)
+      if (editing && !editProvider)
+        throw new HttpError(503, "DISABLED", "Editing is disabled.");
+      if (!editing && !provider)
         throw new HttpError(503, "DISABLED", "Generation is disabled.");
       const now = Date.now();
       admissions = admissions.filter(
@@ -303,19 +370,94 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
       admitted = true;
       admissions.push(now);
       const timeout = () =>
-        new HttpError(504, "TIMEOUT", "Generation timed out.");
+        new HttpError(
+          504,
+          "TIMEOUT",
+          editing ? "Editing timed out." : "Generation timed out.",
+        );
       const deadline =
-        now + (options.totalTimeoutMs ?? GENERATION_LIMITS.totalTimeoutMs);
+        now +
+        (editing
+          ? editLimits.timeoutMs
+          : (options.totalTimeoutMs ?? GENERATION_LIMITS.totalTimeoutMs));
       totalTimer = setTimeout(
         () => controller.abort(timeout()),
         Math.max(1, deadline - Date.now()),
       );
+      if (editing) {
+        const assertActive = () => {
+          if (!controller.signal.aborted && Date.now() >= deadline)
+            controller.abort(timeout());
+          controller.signal.throwIfAborted();
+        };
+        const request = await abortable(
+          () =>
+            readRequest(
+              req,
+              editLimits.requestBytes,
+              controller.signal,
+              editRequestSchema,
+              "Invalid edit request.",
+              true,
+            ),
+          controller.signal,
+        );
+        assertActive();
+        const raw = await abortable(() => {
+          pendingProviders++;
+          return Promise.resolve()
+            .then(() => {
+              assertActive();
+              return editProvider!.propose(
+                structuredClone(request),
+                controller.signal,
+              );
+            })
+            .finally(() => pendingProviders--);
+        }, controller.signal).catch((error) => {
+          assertActive();
+          throw error;
+        });
+        assertActive();
+        let result;
+        try {
+          if (
+            typeof raw !== "string" ||
+            Buffer.byteLength(raw, "utf8") > editLimits.responseBytes
+          )
+            throw Error();
+          result = editResultSchema.parse({
+            mode: "mock",
+            response: JSON.parse(raw),
+          });
+          assertEditTargets(request.context, result.response);
+          if (
+            Buffer.byteLength(JSON.stringify(result), "utf8") >
+            editLimits.responseBytes
+          )
+            throw Error();
+        } catch {
+          assertActive();
+          throw new HttpError(
+            502,
+            "INVALID_OUTPUT",
+            "Provider returned invalid edit operations.",
+          );
+        }
+        assertActive();
+        send(200, result);
+        return;
+      }
+      if (!provider)
+        throw new HttpError(503, "DISABLED", "Generation is disabled.");
       const request = await abortable(
         () =>
           readRequest(
             req,
             options.requestBytes ?? GENERATION_LIMITS.requestBytes,
             controller.signal,
+            websiteGenerationRequestSchema,
+            "Invalid generation request.",
           ),
         controller.signal,
       );
@@ -459,8 +601,16 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
           ? error
           : error instanceof ModelRouterTimeout ||
               (error instanceof DOMException && error.name === "TimeoutError")
-            ? new HttpError(504, "TIMEOUT", "Generation timed out.")
-            : new HttpError(502, "PROVIDER_ERROR", "Generation failed.");
+            ? new HttpError(
+                504,
+                "TIMEOUT",
+                editing ? "Editing timed out." : "Generation timed out.",
+              )
+            : new HttpError(
+                502,
+                "PROVIDER_ERROR",
+                editing ? "Editing failed." : "Generation failed.",
+              );
       const invalidProvider =
         error instanceof ProviderError &&
         ["INVALID_OUTPUT", "TOO_LARGE", "REFUSAL"].includes(error.code);

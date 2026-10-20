@@ -111,6 +111,23 @@ describe("mock chat workspace boundary", () => {
     expect(result.current.project).toEqual(sampleProject);
     expect(localStorage.getItem(key)).toBe(JSON.stringify(sampleProject));
   });
+  it("rejects an old Apply callback after invalid input is restored in one React batch", () => {
+    localStorage.setItem(key, JSON.stringify(sampleProject));
+    const { result } = renderHook(() => useProjectWorkspace());
+    const original = structuredClone(result.current.project);
+    const proposal = createMockEditProposal(
+      original,
+      'update hero-heading text "Reviewed headline"',
+    );
+    const oldApply = result.current.applyProposal;
+    act(() => {
+      result.current.accept({});
+      result.current.accept(toPuckData(original));
+      expect(oldApply(proposal)).toBe(false);
+    });
+    expect(result.current.project).toEqual(original);
+    expect(localStorage.getItem(key)).toBe(JSON.stringify(sampleProject));
+  });
   it("preserves corrupt storage and refuses Apply in a blocked workspace", () => {
     localStorage.setItem(key, "corrupt");
     const { result } = renderHook(() => useProjectWorkspace());

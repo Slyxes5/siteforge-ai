@@ -54,6 +54,10 @@ export function useProjectWorkspace() {
   const [error, setError] = useState(initial.error);
   const [blocked, setBlocked] = useState(initial.blocked);
   const [invalid, setInvalidState] = useState(false);
+  // Monotonic chat freshness also remembers changes/restorations within one React batch.
+  const editEpoch = useRef(0);
+  const editVersion = editEpoch.current;
+  const getEditVersion = () => editEpoch.current;
   // Callbacks can run in one React batch before state is committed.
   const invalidNow = useRef(false);
   function setInvalid(value: boolean) {
@@ -64,6 +68,7 @@ export function useProjectWorkspace() {
   // An old Puck instance may finish async work after unmount. Never apply its data to a new document.
   const editorEpoch = useRef(0);
   function advanceEditor() {
+    editEpoch.current += 1;
     editorEpoch.current += 1;
     setGeneration(editorEpoch.current);
   }
@@ -86,6 +91,11 @@ export function useProjectWorkspace() {
     if (generation !== editorEpoch.current) return null;
     try {
       const next = fromPuckData(data, current.current);
+      if (
+        invalidNow.current ||
+        projectSnapshot(next) !== projectSnapshot(current.current)
+      )
+        editEpoch.current += 1;
       current.current = next;
       setProject(next);
       setInvalid(false);
@@ -93,6 +103,7 @@ export function useProjectWorkspace() {
       setNotice("");
       return next;
     } catch {
+      editEpoch.current += 1;
       setInvalid(true);
       setError(
         "Invalid editor data. Check required text and URLs. Nothing was saved; preview is paused until corrected.",
@@ -101,7 +112,12 @@ export function useProjectWorkspace() {
     }
   }
   function applyProposal(proposal: EditProposal): boolean {
-    if (generation !== editorEpoch.current || blocked || invalidNow.current)
+    if (
+      generation !== editorEpoch.current ||
+      editVersion !== editEpoch.current ||
+      blocked ||
+      invalidNow.current
+    )
       return false;
     try {
       // Another tab may have saved since this draft was loaded. Never apply against
@@ -151,6 +167,7 @@ export function useProjectWorkspace() {
       const verified = store.load(next.id);
       if (JSON.stringify(verified) !== JSON.stringify(next))
         throw new Error("Save verification failed");
+      editEpoch.current += 1;
       current.current = next;
       setProject(next);
       setSaved(next);
@@ -238,6 +255,7 @@ export function useProjectWorkspace() {
           name: next.name,
           revision: next.revision,
         };
+        editEpoch.current += 1;
         current.current = draft;
         setProject(draft);
         setSaved(next);
@@ -292,6 +310,8 @@ export function useProjectWorkspace() {
     invalid,
     blocked,
     generation,
+    editVersion,
+    getEditVersion,
     notice,
     accept,
     applyProposal,

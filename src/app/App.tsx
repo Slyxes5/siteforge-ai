@@ -120,7 +120,14 @@ export function App() {
         <ChatEditor
           key={workspace.project.id + ":" + workspace.generation}
           project={workspace.project}
-          context={workspace.project.id + ":" + workspace.generation}
+          context={
+            workspace.project.id +
+            ":" +
+            workspace.generation +
+            ":" +
+            workspace.editVersion
+          }
+          getEditVersion={workspace.getEditVersion}
           disabled={workspace.blocked || workspace.invalid}
           onApply={workspace.applyProposal}
           onClose={() => setChatOpen(false)}
