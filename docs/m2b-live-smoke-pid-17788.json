@@ -1,0 +1,21 @@
+{
+  "launcherPid": 17788,
+  "model": "gemini-3.5-flash-lite",
+  "startedAt": "2026-10-19T08:31:31.147Z",
+  "state": "observer-timeout-no-retry",
+  "observerTimeoutSeconds": 150,
+  "outboundGeminiCountConfirmed": 1,
+  "outboundCountEvidence": "User-reported launcher shutdown: transportCalls=1",
+  "launcherStopped": true,
+  "port5188ClosedVerified": true,
+  "result": "inconclusive: UI POST recorded, but response and preview were not verified before observer timeout",
+  "generationPosts": 1,
+  "httpStatus": null,
+  "durationMs": null,
+  "jsonValid": null,
+  "schemaValid": null,
+  "blockCount": null,
+  "candidatePreview": false,
+  "storageUnchanged": null,
+  "saved": false
+}

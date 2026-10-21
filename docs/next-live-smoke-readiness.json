@@ -1,0 +1,69 @@
+{
+  "readyForNewApproval": true,
+  "realRequestsAuthorizedNow": false,
+  "realGeminiCallsDuringPreparation": 0,
+  "latestMockEvidence": "docs/smoke-observations/mock-9150d2fe-aa4e-4603-96dc-f72dfb65678f.json",
+  "currentFileFingerprintsMatch": {
+    "dist/index.html": true,
+    "server/generation-server.ts": true,
+    "server/smoke-startup.ts": true,
+    "src/ai/generation-client.ts": true,
+    "src/app/WebsiteGenerator.tsx": true,
+    "e2e/generation-observer.ts": true,
+    "e2e/smoke-workflow.spec.ts": true,
+    "scripts/run-smoke-observer.ts": true,
+    "playwright.smoke.config.ts": true
+  },
+  "singleRequestInvariantsUnchanged": {
+    "server/smoke-start.ts": true,
+    "server/smoke-startup.ts": true,
+    "server/smoke-startup.test.ts": true,
+    "package-lock.json": true
+  },
+  "suites": {
+    "results.json": {
+      "startTime": "2026-10-19T11:47:19.490Z",
+      "duration": 34798.138999999996,
+      "expected": 28,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "observability-results.json": {
+      "startTime": "2026-10-19T11:47:54.959Z",
+      "duration": 14477.711,
+      "expected": 10,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "smoke-runner-results.json": {
+      "startTime": "2026-10-19T11:50:47.298Z",
+      "duration": 3607.05,
+      "expected": 1,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  },
+  "browserPassed": 39,
+  "portsAfterCleanup": {
+    "5188": "closed",
+    "5189": "closed"
+  },
+  "mockObservation": {
+    "phase": "terminal",
+    "startedAt": "2026-10-19T11:50:49.989Z",
+    "finishedAt": "2026-10-19T11:50:50.219Z",
+    "durationMs": 231,
+    "requestId": "1469447f-b1aa-46e5-b2f4-68e791b60b5d",
+    "httpStatus": 200,
+    "generationPosts": 1,
+    "uiState": "success",
+    "schemaValidation": "valid",
+    "transportCalls": 1,
+    "blockCount": 2,
+    "candidatePreview": true,
+    "serverDurationMs": 19
+  }
+}

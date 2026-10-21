@@ -1,0 +1,134 @@
+{
+  "scope": "M2C live acceptance preparation only",
+  "readyForFreshExplicitSingleRequestApproval": true,
+  "liveApproved": false,
+  "liveStarted": false,
+  "realGeminiRequests": 0,
+  "model": "gemini-3.5-flash-lite",
+  "scenario": {
+    "id": "coffee-shop",
+    "name": "SiteForge Coffee Acceptance",
+    "inputSource": "scripts/coffee-acceptance-scenario.ts",
+    "language": "Indonesian",
+    "blockTypes": [
+      "hero",
+      "features",
+      "contact"
+    ],
+    "featureLayout": "grid",
+    "featureItems": 2,
+    "contactEmailPhoneAddress": "empty",
+    "expectedPromptVersion": 2
+  },
+  "checks": {
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "bundleSafety": "passed",
+    "frontendTests": 112,
+    "serverTests": 137,
+    "singleRequestGuardTests": {
+      "passed": 20,
+      "subsetOfServerTests": true
+    },
+    "browser": {
+      "results.json": {
+        "startTime": "2026-10-19T17:08:35.733Z",
+        "duration": 45090.364,
+        "expected": 35,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "observability-results.json": {
+        "startTime": "2026-10-19T17:09:21.530Z",
+        "duration": 23215.629,
+        "expected": 18,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    "browserTotal": 53,
+    "coffeeMockRunner": "passed",
+    "legacyTwoBlockMockRunner": "passed"
+  },
+  "coffeeMockEvidence": "docs/smoke-observations/mock-b8f92657-c140-4da5-a15e-8dc4db1728df.json",
+  "coffeeObservation": {
+    "phase": "terminal",
+    "startedAt": "2026-10-19T17:10:18.116Z",
+    "finishedAt": "2026-10-19T17:10:18.316Z",
+    "durationMs": 199,
+    "requestId": "aa330833-118d-4cf8-a580-dc47dc010fc0",
+    "httpStatus": 200,
+    "generationPosts": 1,
+    "uiState": "success",
+    "schemaValidation": "valid",
+    "transportCalls": 1,
+    "blockCount": 3,
+    "candidatePreview": true,
+    "serverDurationMs": 29,
+    "problem": null
+  },
+  "coffeeStructureConfirmed": true,
+  "contactEmptiesConfirmed": true,
+  "editingBeforeSaveVerified": true,
+  "storageUnchanged": true,
+  "saveClicked": false,
+  "legacyMockEvidence": "docs/smoke-observations/mock-5f6440ea-6cff-4cd3-b81f-aee8761ba65d.json",
+  "unchangedSafetyAndRuntimeFiles": {
+    "server/smoke-startup.ts": true,
+    "server/smoke-start.ts": true,
+    "server/smoke-startup.test.ts": true,
+    "e2e/generation-observer.ts": true,
+    "server/generation-prompt.ts": true,
+    "src/ai/generation-grounding.ts": true,
+    "src/ai/generation-content.ts": true,
+    "src/ai/website-generation.ts": true,
+    "src/app/WebsiteGenerator.tsx": true,
+    "src/app/CandidateEditor.tsx": true,
+    "package.json": true,
+    "package-lock.json": true
+  },
+  "portsReachableAfterCleanup": {
+    "5188": false,
+    "5189": false
+  },
+  "modifiedHarnessFiles": [
+    "scripts/run-smoke-observer.ts",
+    "e2e/smoke-workflow.spec.ts",
+    "playwright.smoke.config.ts",
+    "server/smoke-runner.test.ts"
+  ],
+  "newSyntheticHarnessFiles": [
+    "scripts/coffee-acceptance-scenario.ts",
+    "scripts/mock-coffee-smoke.ts",
+    "server/coffee-acceptance.test.ts"
+  ],
+  "checkpoint": ".milestones/m2c-before-live-acceptance-preparation",
+  "fingerprints": {
+    "dist/index.html": "e50108ad5a5493704b31b0caecc1022aa339a40e5f2d530bcb0269f999a69fb6",
+    "e2e/generation-observer.ts": "cbc3ea4dd48612dd47ad0914df79dde359326f8b84b702576be0fd0a14abf1f8",
+    "e2e/smoke-workflow.spec.ts": "bf7ecab570b45302bfe9350ba071f720be5510559c21bca60980b48a079d61d7",
+    "package-lock.json": "520b5ed093f64676107f3f92adcbb93bb827ecd96f16e0ff089212cc750d04ae",
+    "package.json": "1994de0b2e1cbd3f48c13bfceacf8169889852c8f65f98779001a1bfd3053795",
+    "playwright.smoke.config.ts": "67b9e263d3646ecf4ba3c3ec4e46e10382b7d44e183f2676dacf3d0d9f132ec3",
+    "scripts/coffee-acceptance-scenario.ts": "98a55f1fe6462a7ad29023f7b295c7b8f3e833e5f6eaf8d849df6305ecc03763",
+    "scripts/mock-coffee-smoke.ts": "54e7d3ee7a6a64310aa68b54badc8ab97f5333ef898a1979711258887b2f658a",
+    "scripts/run-smoke-observer.ts": "642b677aabf341c7825907b0200f19364d2304e118426954f7eadf57230400a5",
+    "server/coffee-acceptance.test.ts": "691eadae4c2239f57405d347ba8affecd55a07eff3709079545c94b10c332bd9",
+    "server/gemini-provider.ts": "1566f04206b9fa0db54c199575c8c9fa84c6188ebae155b2d1bde154c86d9497",
+    "server/generation-prompt.ts": "5306b22a58d2483d8920c928f60e906286b0736da043a3b830b16b2479dc5381",
+    "server/generation-server.ts": "8e377f3583fbd5747b0b386b842a67c4cb2111c4a9b288e571e8bb8b55f6d2c6",
+    "server/smoke-runner.test.ts": "80704729a3bb9461550f2bc947ae4fe0f03406ff6af8784fb090075bebbdf6dc",
+    "server/smoke-start.ts": "607417f02ef8d92800cba94f595f8eab76e9788b4431abf9e0ee09dd3a3f8e9d",
+    "server/smoke-startup.test.ts": "644879160bb1c9f5b352ba6305b12980004bb37cc29b9dbc9628bf4b89d7d191",
+    "server/smoke-startup.ts": "a359e605e55b3b92536dd257f7c6559262bc13c22b1d6b00566215cd239f25f7",
+    "src/ai/generation-client.ts": "46c045c805f77fb47cc3dbb589bd64f9e91ad80b321ea57ae6c60edab5b2fe6a",
+    "src/ai/generation-content.ts": "8db8dc5261cd4cf52af3834926ea8d2dc7309756872172714faa7043f0a1b309",
+    "src/ai/generation-grounding.ts": "8d8a5da246ae8bca5e4bb8061122ef64fceb86f40b8ccbe6d78f7996a35498e2",
+    "src/ai/website-generation.ts": "a5889fb46279b7e75757ffd06a67bd0baf8cc4e2928233fb446da78f4c24d438",
+    "src/app/CandidateEditor.tsx": "dd2fca6833cbe232337bbc29f336183330bd3ac0101ba6fbd7a62aa5b812d8ca",
+    "src/app/WebsiteGenerator.tsx": "df049412df28a6804aafbc68961fbb8c1431f7f1e251f750f52e3631efa57e67",
+    "src/project-schema/project.ts": "442e454f80abd274e77d846dffb3a0b360a5a59721b26233667574db3c162947"
+  }
+}

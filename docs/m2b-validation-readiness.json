@@ -1,0 +1,405 @@
+{
+  "milestone": "M2B validation root-cause analysis and fix",
+  "scope": "mock-only",
+  "historicalLiveEvidence": "docs/smoke-observations/launcher-5808.json",
+  "historicalRootCauseConfirmed": false,
+  "realGeminiRequestsDuringThisTask": 0,
+  "liveApproved": false,
+  "modelUnchanged": "gemini-3.5-flash-lite",
+  "checkpoint": ".milestones/m2b-before-validation-rca",
+  "checks": {
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "clientBundleSafety": "passed",
+    "unitAndServer": {
+      "ui": {
+        "passed": 81,
+        "failed": 0,
+        "success": true
+      },
+      "server": {
+        "passed": 129,
+        "failed": 0,
+        "success": true
+      }
+    },
+    "browser": {
+      "browserRegression": {
+        "startTime": "2026-10-19T12:47:17.520Z",
+        "duration": 34144.85,
+        "expected": 28,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "browserDiagnostics": {
+        "startTime": "2026-10-19T12:47:52.374Z",
+        "duration": 20860.396999999997,
+        "expected": 17,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    "browserTotal": 45,
+    "singleRequestFocusedTests": {
+      "passed": 20,
+      "includedInServerTotal": true
+    },
+    "mockObserver": "passed"
+  },
+  "mockEvidence": "docs/smoke-observations/mock-11989fbd-0600-403a-9a0c-a0198fe2b145.json",
+  "mockObservation": {
+    "phase": "terminal",
+    "startedAt": "2026-10-19T12:48:45.491Z",
+    "finishedAt": "2026-10-19T12:48:45.662Z",
+    "durationMs": 171,
+    "requestId": "23af1f6c-8276-406f-84ae-eadddf5d00c7",
+    "httpStatus": 200,
+    "generationPosts": 1,
+    "uiState": "success",
+    "schemaValidation": "valid",
+    "transportCalls": 1,
+    "blockCount": 2,
+    "candidatePreview": true,
+    "serverDurationMs": 20,
+    "problem": null
+  },
+  "storageUnchanged": true,
+  "saveClicked": false,
+  "eventCounts": {
+    "starts": 16,
+    "finishes": 16,
+    "exactlyOnce": true
+  },
+  "safeTerminalEvents": [
+    {
+      "event": "generation_finish",
+      "requestId": "50d9fcf6-91a3-428b-a9ff-5c5ebb8afd59",
+      "startedAt": "2026-10-19T12:47:56.432Z",
+      "finishedAt": "2026-10-19T12:47:56.513Z",
+      "durationMs": 80,
+      "outcome": "success",
+      "schemaValidation": "valid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 200,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "4624cf22-c348-480d-9847-387ddc518ca9",
+      "startedAt": "2026-10-19T12:47:57.374Z",
+      "finishedAt": "2026-10-19T12:47:57.378Z",
+      "durationMs": 3,
+      "outcome": "success",
+      "schemaValidation": "valid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 200,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "31ef621c-19f7-4715-b309-4b36d532d2ce",
+      "startedAt": "2026-10-19T12:47:58.131Z",
+      "finishedAt": "2026-10-19T12:47:58.134Z",
+      "durationMs": 3,
+      "outcome": "success",
+      "schemaValidation": "valid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 200,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "16d57e36-7a4b-48fe-9493-5d39b140084f",
+      "startedAt": "2026-10-19T12:48:00.464Z",
+      "finishedAt": "2026-10-19T12:48:00.467Z",
+      "durationMs": 2,
+      "outcome": "provider_error",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "providerStatus": 429,
+      "problem": {
+        "stage": "provider_transport",
+        "reason": "HTTP_ERROR"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "2ccd21ce-9fe9-453c-bc43-74ed83c9851f",
+      "startedAt": "2026-10-19T12:48:01.404Z",
+      "finishedAt": "2026-10-19T12:48:01.406Z",
+      "durationMs": 1,
+      "outcome": "provider_error",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "providerStatus": 500,
+      "problem": {
+        "stage": "provider_transport",
+        "reason": "HTTP_ERROR"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "4950be48-af2a-46bc-9620-03523f7d5a72",
+      "startedAt": "2026-10-19T12:48:02.173Z",
+      "finishedAt": "2026-10-19T12:48:02.175Z",
+      "durationMs": 2,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "provider_envelope",
+        "reason": "MALFORMED_ENVELOPE_JSON"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "60e8f260-ad35-4518-89a5-7ad85e1dbd02",
+      "startedAt": "2026-10-19T12:48:02.989Z",
+      "finishedAt": "2026-10-19T12:48:02.993Z",
+      "durationMs": 4,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "structured_output",
+        "reason": "STRUCTURED_CONTENT_REJECTED",
+        "issues": [
+          {
+            "code": "invalid_union",
+            "path": "blocks[0].type"
+          }
+        ]
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "ab003e00-26c3-4fae-9ae1-8bc500d35360",
+      "startedAt": "2026-10-19T12:48:03.735Z",
+      "finishedAt": "2026-10-19T12:48:04.952Z",
+      "durationMs": 1217,
+      "outcome": "timeout",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 504,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "8acb05b2-0841-4df3-b865-f51564b9d98c",
+      "startedAt": "2026-10-19T12:48:05.751Z",
+      "finishedAt": "2026-10-19T12:48:06.954Z",
+      "durationMs": 1203,
+      "outcome": "timeout",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 504,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "69d92b07-45f2-4139-9e7c-c3ff8a4359f2",
+      "startedAt": "2026-10-19T12:48:07.725Z",
+      "finishedAt": "2026-10-19T12:48:07.727Z",
+      "durationMs": 1,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "provider_envelope",
+        "reason": "EMPTY_RESPONSE"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "93fa52a5-45c4-45cb-b7c0-d479365169d7",
+      "startedAt": "2026-10-19T12:48:08.525Z",
+      "finishedAt": "2026-10-19T12:48:08.528Z",
+      "durationMs": 2,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "provider_envelope",
+        "reason": "OUTPUT_TRUNCATED"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "17c43988-0a27-412d-b5e3-12235edfe1af",
+      "startedAt": "2026-10-19T12:48:09.272Z",
+      "finishedAt": "2026-10-19T12:48:09.275Z",
+      "durationMs": 2,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "provider_envelope",
+        "reason": "PROVIDER_REFUSAL"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "35e45661-1b78-4ad9-bae2-da09a0ec8be7",
+      "startedAt": "2026-10-19T12:48:10.053Z",
+      "finishedAt": "2026-10-19T12:48:10.055Z",
+      "durationMs": 1,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "content_json",
+        "reason": "MALFORMED_CONTENT_JSON"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "ac9cbb6c-db61-4f9c-bf8a-268b7be907b5",
+      "startedAt": "2026-10-19T12:48:10.789Z",
+      "finishedAt": "2026-10-19T12:48:10.791Z",
+      "durationMs": 2,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "structured_output",
+        "reason": "STRUCTURED_CONTENT_REJECTED",
+        "issues": [
+          {
+            "code": "invalid_type",
+            "path": "blocks[0].text"
+          },
+          {
+            "code": "unrecognized_keys",
+            "path": "blocks[0]"
+          }
+        ]
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "e424faff-48e3-410b-925f-2e6a6ff2281e",
+      "startedAt": "2026-10-19T12:48:11.495Z",
+      "finishedAt": "2026-10-19T12:48:11.626Z",
+      "durationMs": 130,
+      "outcome": "cancelled",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 499,
+      "delivery": "disconnected"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "f65e55a4-a116-4472-91fd-1e23ed14b5ea",
+      "startedAt": "2026-10-19T12:48:12.311Z",
+      "finishedAt": "2026-10-19T12:48:12.392Z",
+      "durationMs": 80,
+      "outcome": "cancelled",
+      "schemaValidation": "valid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 200,
+      "delivery": "disconnected"
+    }
+  ],
+  "screenshots": {
+    "metadataCandidate": "docs/screenshots/m2b-validation-metadataCandidate.png",
+    "safeRejection": "docs/screenshots/m2b-validation-safeRejection.png"
+  },
+  "unchangedSafetyFiles": {
+    "server/smoke-startup.ts": true,
+    "server/smoke-start.ts": true,
+    "server/smoke-startup.test.ts": true,
+    "src/project-schema/project.ts": true,
+    "src/ai/generation-client.ts": true,
+    "package.json": true,
+    "package-lock.json": true
+  },
+  "portsReachableAfterCleanup": {
+    "5188": false,
+    "5189": false
+  },
+  "changedExistingFiles": [
+    "src/ai/generation-content.test.ts",
+    "src/ai/generation-content.ts",
+    "src/ai/generation-observation.ts",
+    "src/app/WebsiteGenerator.tsx",
+    "server/gemini-provider.test.ts",
+    "server/gemini-provider.ts",
+    "server/generation-observation.test.ts",
+    "server/generation-server.ts",
+    "server/observability-fixture.ts",
+    "server/provider-error.ts",
+    "e2e/generation-observer.ts",
+    "e2e/observability.spec.ts",
+    "README.md"
+  ],
+  "newCodeFiles": [
+    "src/ai/generation-validation.ts",
+    "src/ai/generation-validation.test.ts"
+  ],
+  "sourceAndBuildFingerprints": {
+    "README.md": "ceb58a60d483906953b2f1daaffb2b319202d51571f0c4aa10be4ebda136f484",
+    "dist/index.html": "e22602d3c595aaeb9be57097ccb1fc303a2a493751c909aee4af97c1a45e0c45",
+    "e2e/generation-observer.ts": "cbc3ea4dd48612dd47ad0914df79dde359326f8b84b702576be0fd0a14abf1f8",
+    "e2e/observability.spec.ts": "806c1be6cd1af7ab733c57d3328af47005987d33fe6388dc1cafbdb8be4a4244",
+    "e2e/smoke-workflow.spec.ts": "4bf6d7588fe4d27911503b267a03caeed7c394d74ee867798076295c6b1d32b8",
+    "package-lock.json": "520b5ed093f64676107f3f92adcbb93bb827ecd96f16e0ff089212cc750d04ae",
+    "package.json": "1994de0b2e1cbd3f48c13bfceacf8169889852c8f65f98779001a1bfd3053795",
+    "playwright.smoke.config.ts": "980e994a52b4af96574f574504da24adf1ee7560fbb4bf0ff243430c7c29afa9",
+    "scripts/run-smoke-observer.ts": "d9464e1f1c46dab6de692d2549501c80a8afc361c03e3267ac71681fe3fcb26d",
+    "server/gemini-provider.test.ts": "4c211e0635edfba31027f4e9acd8aaf12b3e2cd8541701349c1899b647c87515",
+    "server/gemini-provider.ts": "f08150a39770fed0b5adb9e9b4b34299cc0083ca29c61431c620cb260f8d33e0",
+    "server/generation-observation.test.ts": "61eac8ddc98a58cd30e28c50392d803cda0c42ca3436d7dd68f4060f249b8f7a",
+    "server/generation-server.ts": "8e377f3583fbd5747b0b386b842a67c4cb2111c4a9b288e571e8bb8b55f6d2c6",
+    "server/observability-fixture.ts": "0f36de98ff8f1e0440f6457b845f8a550e6949cc91dca95cd1ac02c8b5e0bd50",
+    "server/provider-error.ts": "92b9fcce37aac96643794468e7be4a4c5dc9b6f1d6b653d9bf6329ff4b05d7ac",
+    "server/smoke-start.ts": "607417f02ef8d92800cba94f595f8eab76e9788b4431abf9e0ee09dd3a3f8e9d",
+    "server/smoke-startup.test.ts": "644879160bb1c9f5b352ba6305b12980004bb37cc29b9dbc9628bf4b89d7d191",
+    "server/smoke-startup.ts": "a359e605e55b3b92536dd257f7c6559262bc13c22b1d6b00566215cd239f25f7",
+    "src/ai/generation-client.ts": "a4ea52c9031ef7a73c0b9e68a66ab9c2c7ab304ba1f71f9b03304ae35b1b41da",
+    "src/ai/generation-content.test.ts": "266668ffa16fddbd81ee650312ff44a8c9b24715435556cb8186382aeed44f90",
+    "src/ai/generation-content.ts": "f70929a24bc2eafa65fd5ee9d1fb858bf60e0462dd484a007d18b8542922c3f3",
+    "src/ai/generation-observation.ts": "473d51947c3e5306770aca5ffd2fb299869294e1073047e1c387b64f1407daea",
+    "src/ai/generation-validation.test.ts": "c11520a1c4825f734f2dd3e95fb9a8f0d3b6df556b96f650b0f6a1cdd074d057",
+    "src/ai/generation-validation.ts": "aec699afba3790ee02d2729a08297abfdc4dbe5afc7ec434f96dd1a913bd94c2",
+    "src/app/WebsiteGenerator.tsx": "3f850743bc6826e9829f86b5e61e17898c1b7b5b6b28d9fd09363e24e83c7575",
+    "src/project-schema/project.ts": "b2f0c2e36ba68b99bd84b73313e9aaeff6ecac148f8a96f733864d28b997f028"
+  },
+  "readyForNewExplicitlyApprovedSingleLiveSmoke": true,
+  "liveGenerationSuccessVerified": false
+}

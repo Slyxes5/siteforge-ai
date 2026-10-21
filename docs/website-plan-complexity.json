@@ -1,0 +1,33 @@
+{
+  "scenario": "coffee-shop",
+  "units": "UTF-8 bytes; schema-node depth counts schema nodes, not JSON containers",
+  "legacy": {
+    "requestBytes": 8834,
+    "schemaBytes": 5295,
+    "instructionBytes": 2410,
+    "schemaNodes": 52,
+    "schemaDepth": 7,
+    "unionBranches": 8,
+    "requiredFields": 41,
+    "descriptions": 28,
+    "maxOutputTokens": 4096
+  },
+  "websitePlan": {
+    "requestBytes": 3966,
+    "schemaBytes": 883,
+    "instructionBytes": 1937,
+    "schemaNodes": 16,
+    "schemaDepth": 6,
+    "unionBranches": 0,
+    "requiredFields": 13,
+    "descriptions": 0,
+    "maxOutputTokens": 4096
+  },
+  "reductionsPercent": {
+    "requestBytes": 55.11,
+    "schemaBytes": 83.32,
+    "schemaNodes": 69.23,
+    "requiredFields": 68.29
+  },
+  "note": "Offline measurement only. No token estimate or claim of Gemini acceptance. Uniform blocks may increase output size for short blocks; maxOutputTokens is unchanged."
+}
