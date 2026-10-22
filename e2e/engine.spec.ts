@@ -81,7 +81,7 @@ test("edits all six component types through real Puck fields and preserves every
     })),
   );
   await page.getByRole("button", { name: "Preview", exact: true }).click();
-  const preview = page.getByRole("region", { name: "Website preview" });
+  const preview = page.frameLocator('iframe[title="Website device preview"]');
   for (const text of [
     "Heading edited",
     "Paragraph edited",
@@ -260,7 +260,7 @@ test("mobile editor and preview fit the viewport", async ({ page }) => {
   ).toBeLessThanOrEqual(390);
   await expect(
     page
-      .getByRole("region", { name: "Website preview" })
+      .frameLocator('iframe[title="Website device preview"]')
       .getByRole("img", { name: "Sage landscape" }),
   ).toBeVisible();
   await page.screenshot({

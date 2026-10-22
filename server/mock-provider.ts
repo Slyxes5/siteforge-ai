@@ -6,7 +6,7 @@ const categories = {
     title: "Menu kopi",
     items: ["Pilihan kopi", "Suasana kedai"],
     layout: "grid",
-    order: ["about", "features", "image", "contact"],
+    order: ["heroImage", "menu", "gallery", "about", "contact"],
   },
   barber: {
     title: "Layanan barber",
@@ -34,7 +34,7 @@ const categories = {
   },
 } as const;
 function category(prompt: string): keyof typeof categories {
-  if (/\b(coffee|kopi|cafe|kafe)\b/i.test(prompt)) return "coffee";
+  if (/\b(coffee|coffe|kopi|cafe|kafe)\b/i.test(prompt)) return "coffee";
   if (/\b(barber|barbershop|pangkas)\b/i.test(prompt)) return "barber";
   if (/\b(rental|sewa)\b.*\b(mobil|car)\b|\bcar rental\b/i.test(prompt))
     return "rental";
@@ -69,6 +69,50 @@ export function createMockProvider(): WebsiteGenerationProvider {
             description: "Placeholder — lengkapi dengan informasi yang benar.",
           })),
         },
+        menu: {
+          id: "menu",
+          type: "menu",
+          text: "Menu pilihan",
+          items: [
+            {
+              title: "House coffee",
+              description: "Placeholder — tambahkan minuman unggulan Anda.",
+              price: "",
+            },
+            {
+              title: "Seasonal brew",
+              description: "Placeholder — lengkapi dengan deskripsi yang benar.",
+              price: "",
+            },
+            {
+              title: "Fresh pastry",
+              description: "Placeholder — sesuaikan dengan menu café Anda.",
+              price: "",
+            },
+          ],
+        },
+        gallery: {
+          id: "gallery",
+          type: "gallery",
+          text: "Suasana kedai",
+          items: [
+            {
+              src: "/sample-landscape.svg",
+              alt: "Placeholder gambar interior café; ganti dengan foto Anda",
+              caption: "Interior café",
+            },
+            {
+              src: "/sample-landscape.svg",
+              alt: "Placeholder gambar kopi; ganti dengan foto Anda",
+              caption: "Kopi pilihan",
+            },
+            {
+              src: "/sample-landscape.svg",
+              alt: "Placeholder gambar suasana; ganti dengan foto Anda",
+              caption: "Suasana",
+            },
+          ],
+        },
         image: {
           id: "landscape",
           type: "image",
@@ -76,14 +120,22 @@ export function createMockProvider(): WebsiteGenerationProvider {
           alt: "Sample landscape placeholder",
           src: "/sample-landscape.svg",
         },
+        heroImage: {
+          id: "hero-photo",
+          type: "image",
+          text: "",
+          alt: "Placeholder foto utama café; ganti dengan foto kedai Anda",
+          src: "/sample-landscape.svg",
+        },
         contact: {
           id: "contact",
           type: "contact",
           text: "Kontak",
-          body: "Placeholder kontak statis; bukan backend booking atau pembayaran. Lengkapi detail kontak Anda.",
+          body: "Lengkapi alamat dan jalur reservasi café Anda di editor.",
           email: "",
           phone: "",
           address: "",
+          openingHours: "",
         },
       };
       return {

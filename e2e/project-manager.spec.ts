@@ -89,19 +89,22 @@ test("M2A create → edit → save → switch project → reopen with isolated d
   await page.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(
     page
-      .getByRole("region", { name: "Website preview" })
+      .frameLocator('iframe[title="Website device preview"]')
       .getByRole("heading", { name: "Coffee edited in M2A" }),
   ).toBeVisible();
   const targetId = (await page
-    .getByRole("region", { name: "Website preview" })
+    .frameLocator('iframe[title="Website device preview"]')
     .locator('a[href^="#"]')
     .first()
     .getAttribute("href"))!.slice(1);
   expect(
-    await page.evaluate((id) => {
-      const target = document.getElementById(id);
-      return !!target && !target.closest("[hidden]");
-    }, targetId),
+    await page
+      .frameLocator('iframe[title="Website device preview"]')
+      .locator("body")
+      .evaluate(
+        (body, id) => !!body.ownerDocument.getElementById(id),
+        targetId,
+      ),
   ).toBe(true);
   await page.screenshot({
     path: "test-results/m2a-generated-preview.png",

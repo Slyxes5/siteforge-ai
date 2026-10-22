@@ -4,6 +4,7 @@ import "@puckeditor/core/puck.css";
 import { puckConfig } from "./puck-config";
 import { toPuckData } from "./project-adapter";
 import type { Project } from "../project-schema/project";
+import { ProjectDesign } from "../renderer/ProjectDesign";
 /** Puck data is initial-only. Explicit reload remounts this boundary. */
 export default function VisualEditor({
   project,
@@ -17,17 +18,27 @@ export default function VisualEditor({
   saveLabel?: string;
 }) {
   const [data] = useState(() => toPuckData(project));
+  const [initialUi] = useState(() => {
+    const compact = window.matchMedia("(max-width: 1023px)").matches;
+    return {
+      leftSideBarVisible: !compact,
+      rightSideBarVisible: !compact,
+    };
+  });
   return (
-    <Puck
-      config={puckConfig}
-      data={data}
-      onChange={onChange}
-      onPublish={onSave}
-      headerTitle={project.name}
-      headerPath="/"
-      dictionary={{ "header-publish": saveLabel }}
-      iframe={{ enabled: false }}
-      height={800}
-    />
+    <ProjectDesign project={project} design={project.design}>
+      <Puck
+        config={puckConfig}
+        data={data}
+        ui={initialUi}
+        onChange={onChange}
+        onPublish={onSave}
+        headerTitle={project.name}
+        headerPath="/"
+        dictionary={{ "header-publish": saveLabel }}
+        iframe={{ enabled: false }}
+        height={800}
+      />
+    </ProjectDesign>
   );
 }

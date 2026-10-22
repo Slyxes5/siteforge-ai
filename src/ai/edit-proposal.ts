@@ -5,6 +5,7 @@ import {
   type Project,
 } from "../project-schema/project";
 import { assertGroundedContent } from "./generation-grounding";
+import { liveEditSourceSchema, type LiveEditSource } from "./edit-source";
 
 const updateSchema = z.strictObject({
   op: z.literal("update"),
@@ -45,17 +46,23 @@ const operationSchema = z.discriminatedUnion("op", [
     blockIds: z.array(z.string().min(1)).max(200),
   }),
 ]);
-export const editProposalSchema = z.strictObject({
-  id: z.string().uuid(),
-  version: z.literal(1),
-  mode: z.literal("mock"),
-  projectId: z.string().min(1),
-  baseRevision: z.number().int().nonnegative(),
-  baseSnapshot: z.string().min(1).max(8_000_000),
-  request: z.string().trim().min(1).max(10000),
-  summary: z.string().trim().min(1).max(2000),
-  operations: z.array(operationSchema).min(1).max(100),
-});
+export const editProposalSchema = z
+  .strictObject({
+    id: z.string().uuid(),
+    version: z.literal(1),
+    mode: z.enum(["mock", "live"]),
+    source: liveEditSourceSchema.optional(),
+    projectId: z.string().min(1),
+    baseRevision: z.number().int().nonnegative(),
+    baseSnapshot: z.string().min(1).max(8_000_000),
+    request: z.string().trim().min(1).max(10000),
+    summary: z.string().trim().min(1).max(2000),
+    operations: z.array(operationSchema).min(1).max(100),
+  })
+  .refine(
+    (value) => (value.mode === "live") === (value.source !== undefined),
+    "Live proposals must identify their source; mock proposals cannot claim a live source.",
+  );
 export type EditProposal = z.infer<typeof editProposalSchema>;
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical);
@@ -81,6 +88,7 @@ const visibleFields = [
   "email",
   "phone",
   "address",
+  "openingHours",
 ];
 function visibleContent(project: Project): string {
   return project.blocks
@@ -92,6 +100,18 @@ function visibleContent(project: Project): string {
       if (block.type === "features")
         values.push(
           ...block.items.flatMap((item) => [item.title, item.description]),
+        );
+      if (block.type === "menu")
+        values.push(
+          ...block.items.flatMap((item) => [
+            item.title,
+            item.description,
+            item.price ?? "",
+          ]),
+        );
+      if (block.type === "gallery")
+        values.push(
+          ...block.items.flatMap((item) => [item.alt, item.caption]),
         );
       return values;
     })
@@ -130,7 +150,9 @@ function assertAnchors(current: Project, result: Project): void {
     new Set(
       project.blocks
         .filter((block) =>
-          ["section", "features", "contact"].includes(block.type),
+          ["section", "features", "contact", "menu", "gallery"].includes(
+            block.type,
+          ),
         )
         .map((block) => block.id),
     );
@@ -167,6 +189,8 @@ function assertGroundedUrls(
     const record = block as Record<string, unknown>;
     for (const field of urlFields)
       if (typeof record[field] === "string") supplied.add(record[field]);
+    if (block.type === "gallery")
+      for (const item of block.items) supplied.add(item.src);
   }
   for (const source of [
     current.name,
@@ -194,17 +218,26 @@ function assertGroundedUrls(
         );
       }
     }
+    if (block.type === "gallery")
+      for (const item of block.items) {
+        if (item.src && !supplied.has(item.src))
+          throw new Error(
+            "Ungrounded URL or image source: supply the exact src in the request.",
+          );
+      }
   }
 }
 export function createEditProposal(
   base: Project,
   request: string,
   operations: unknown[],
+  source?: LiveEditSource,
 ): EditProposal {
   const proposal = editProposalSchema.parse({
     id: crypto.randomUUID(),
     version: 1,
-    mode: "mock",
+    mode: source ? "live" : "mock",
+    ...(source ? { source } : {}),
     projectId: base.id,
     baseRevision: base.revision,
     baseSnapshot: projectSnapshot(base),

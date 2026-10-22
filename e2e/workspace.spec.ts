@@ -29,7 +29,7 @@ test("Edit → Live Preview → Preview → Save → Reload → browser refresh"
   await page.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(
     page
-      .getByRole("region", { name: "Website preview" })
+      .frameLocator('iframe[title="Website device preview"]')
       .getByRole("heading", { name: "Built with SiteForge M1" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Save project", exact: true }).click();

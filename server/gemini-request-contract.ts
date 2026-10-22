@@ -64,6 +64,8 @@ function validateSchema(schema: unknown): void {
     "section",
     "features",
     "contact",
+    "menu",
+    "gallery",
   ]);
   if (
     !record(properties) ||
@@ -116,7 +118,7 @@ function validateSchema(schema: unknown): void {
       if (
         !Array.isArray(value.anyOf) ||
         value.anyOf.length < 1 ||
-        value.anyOf.length > 8
+        value.anyOf.length > 12
       )
         fail("UNSUPPORTED_REQUEST_SCHEMA");
       children.push(...value.anyOf);

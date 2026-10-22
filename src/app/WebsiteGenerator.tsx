@@ -18,6 +18,14 @@ import {
 import { createProjectLibrary } from "../persistence/project-library";
 import { ProjectRenderer } from "../renderer/ProjectRenderer";
 import type { Project } from "../project-schema/project";
+import { StudioIcon } from "./StudioIcon";
+import { designPresets, type DesignPreset } from "../project-schema/design";
+import { GenerationCompleteness } from "./GenerationCompleteness";
+import {
+  completenessProfiles,
+  resolveCompletenessProfile,
+  type CompletenessProfile,
+} from "../ai/generation-standards";
 import type {
   GenerationDiagnostics,
   GenerationOutcome,
@@ -41,7 +49,15 @@ export function WebsiteGenerator({
 }: GeneratorProps) {
   const [name, setName] = useState("");
   const [prompt, setPrompt] = useState("");
+  const [designPreference, setDesignPreference] = useState<DesignPreset | "">(
+    "",
+  );
   const [template, setTemplate] = useState<TemplateId>("business");
+  const [completenessProfile, setCompletenessProfile] = useState<
+    CompletenessProfile | ""
+  >("");
+  const [candidateProfile, setCandidateProfile] =
+    useState<CompletenessProfile>("general");
   const [candidate, setCandidate] = useState<Project | null>(null);
   const [saved, setSaved] = useState(false);
   const [editSession, setEditSession] = useState<{
@@ -61,6 +77,7 @@ export function WebsiteGenerator({
   const saving = useRef(false);
   const savedRef = useRef(false);
   const currentContext = useRef(context);
+  const promptField = useRef<HTMLTextAreaElement>(null);
   currentContext.current = context;
   useEffect(() => {
     epoch.current += 1;
@@ -138,7 +155,12 @@ export function WebsiteGenerator({
   async function run(event: React.FormEvent) {
     event.preventDefault();
     if (active.current || !replaceAllowed()) return;
-    const request = websiteGenerationRequestSchema.safeParse({ name, prompt });
+    const request = websiteGenerationRequestSchema.safeParse({
+      name,
+      prompt,
+      ...(designPreference ? { designPreference } : {}),
+      ...(completenessProfile ? { completenessProfile } : {}),
+    });
     if (!request.success) {
       setGenerationState("validation_error");
       setError("Enter a website name and a prompt of at most 4000 characters.");
@@ -194,7 +216,7 @@ export function WebsiteGenerator({
         controller.abort(
           new DOMException("Generation deadline", "TimeoutError"),
         ),
-      GENERATION_LIMITS.totalTimeoutMs,
+      GENERATION_LIMITS.clientTimeoutMs,
     );
     try {
       const result = await abortableGeneration(
@@ -234,6 +256,7 @@ export function WebsiteGenerator({
         );
       complete("success", result.diagnostics);
       setCandidate(project);
+      setCandidateProfile(resolveCompletenessProfile(request.data));
       setNotice(
         "Validated candidate only. Nothing has been saved or replaced.",
       );
@@ -271,7 +294,11 @@ export function WebsiteGenerator({
   function fallback() {
     if (active.current || !replaceAllowed()) return;
     try {
-      const request = websiteGenerationRequestSchema.parse({ name, prompt });
+      const request = websiteGenerationRequestSchema.parse({
+        name,
+        prompt,
+        ...(completenessProfile ? { completenessProfile } : {}),
+      });
       const project = generateProject({
         id: crypto.randomUUID(),
         name: request.name,
@@ -282,7 +309,11 @@ export function WebsiteGenerator({
       setEditSession(null);
       setGenerationState("idle");
       setReceipt(null);
-      setCandidate(project);
+      setCandidate({
+        ...project,
+        ...(designPreference ? { design: { preset: designPreference } } : {}),
+      });
+      setCandidateProfile(resolveCompletenessProfile(request));
       setSaved(false);
       savedRef.current = false;
       setError("");
@@ -333,16 +364,264 @@ export function WebsiteGenerator({
       data-generation-block-count={candidate?.blocks.length}
       data-generation-request-id={receipt?.requestId}
     >
-      <div className="manager-heading">
-        <div>
-          <h2>Website generator</h2>
-          <p>
-            M2C · Live generation disabled by default. Review content before
-            saving.
-          </p>
-        </div>
+      <div className="generator-topline">
+        <span>
+          <StudioIcon name="sparkles" /> BUAT PROYEK BARU
+        </span>
         <button className="secondary" onClick={close}>
           Close generator
+        </button>
+      </div>
+      <header className="generator-hero">
+        <span className="generator-eyebrow">
+          <StudioIcon name="sparkles" /> Eksplorasi ide proyek
+        </span>
+        <h2>Apa yang ingin Anda buat hari ini?</h2>
+        <p>
+          Mulai dari sebuah ide. Susun website Anda, tinjau hasilnya, lalu
+          sempurnakan di studio.
+        </p>
+      </header>
+      <ol className="generator-workflow" aria-label="Project creation workflow">
+        <li aria-current={!candidate ? "step" : undefined}>
+          <span>{candidate ? "✓" : "1"}</span>Ide & kebutuhan
+        </li>
+        <li aria-current={candidate && !saved ? "step" : undefined}>
+          <span>{saved ? "✓" : "2"}</span>Review kandidat
+        </li>
+        <li aria-current={saved ? "step" : undefined}>
+          <span>3</span>Simpan & buka
+        </li>
+      </ol>
+      <form
+        className="generator-composer"
+        onSubmit={(event) => void run(event)}
+      >
+        <div className="generator-name-field">
+          <label htmlFor="website-name">Website name</label>
+          <input
+            id="website-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={200}
+            required
+            disabled={busy}
+            placeholder="Beri nama untuk ide besar Anda"
+          />
+        </div>
+        <div className="generator-prompt-field">
+          <label htmlFor="website-prompt">Website prompt</label>
+          <textarea
+            ref={promptField}
+            id="website-prompt"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            maxLength={GENERATION_LIMITS.promptCharacters}
+            required
+            rows={4}
+            disabled={busy}
+            placeholder="Contoh: Website rental mobil di Makassar dengan pengenalan bisnis, informasi armada, layanan, dan kontak pemesanan. Gunakan tampilan modern yang mudah dibaca di ponsel…"
+          />
+        </div>
+        <div className="generator-design-field">
+          <label htmlFor="generation-design">Design direction</label>
+          <select
+            id="generation-design"
+            value={designPreference}
+            disabled={busy}
+            onChange={(event) =>
+              setDesignPreference(event.target.value as DesignPreset | "")
+            }
+          >
+            <option value="">AI chooses from my prompt</option>
+            {designPresets.map((preset) => (
+              <option value={preset.id} key={preset.id}>
+                {preset.label}
+              </option>
+            ))}
+          </select>
+          <p className="manager-help">
+            {designPresets.find((preset) => preset.id === designPreference)
+              ?.description ??
+              "Describe colors, visual mood and layout in your prompt. AI can choose a matching direction; the local template keeps its original style."}{" "}
+            Applies to the next candidate.
+          </p>
+        </div>
+        <div className="generator-completeness-field">
+          <label htmlFor="generation-completeness">Standar kelengkapan</label>
+          <select
+            id="generation-completeness"
+            value={completenessProfile}
+            disabled={busy}
+            onChange={(event) =>
+              setCompletenessProfile(
+                event.target.value as CompletenessProfile | "",
+              )
+            }
+          >
+            <option value="">Saran dari brief</option>
+            {completenessProfiles.map((profile) => (
+              <option key={profile.id} value={profile.id}>
+                {profile.label}
+              </option>
+            ))}
+          </select>
+          <p className="manager-help">
+            Standar berikutnya:{" "}
+            {
+              completenessProfiles.find(
+                (profile) =>
+                  profile.id ===
+                  resolveCompletenessProfile({
+                    prompt,
+                    ...(completenessProfile ? { completenessProfile } : {}),
+                  }),
+              )?.label
+            }
+            . Pilih sendiri jika saran belum sesuai. Jumlah dan bagian yang Anda
+            minta tetap diutamakan.
+          </p>
+        </div>
+        <div className="generator-composer-footer">
+          <span className="generator-offline-label">
+            <span className="dot" /> Live generation disabled by default
+          </span>
+          <span className="generator-counter">
+            {prompt.length.toLocaleString("id-ID")} /{" "}
+            {GENERATION_LIMITS.promptCharacters.toLocaleString("id-ID")}{" "}
+            karakter
+          </span>
+          <button
+            className="primary"
+            type="submit"
+            disabled={busy}
+            aria-busy={busy}
+          >
+            <StudioIcon name="sparkles" />
+            Generate candidate
+          </button>
+          {busy && (
+            <button className="secondary" type="button" onClick={cancel}>
+              Cancel generation
+            </button>
+          )}
+        </div>
+      </form>
+      <div className="generator-inspiration" aria-label="Prompt ideas">
+        <span>Ide populer</span>
+        {(
+          [
+            {
+              label: "Rental mobil",
+              name: "Rental Mobil",
+              template: "car-rental",
+              prompt:
+                "Website rental mobil dengan profil bisnis, informasi armada dan layanan, serta kontak untuk pertanyaan sewa. Jangan mengklaim ketersediaan atau menerima pembayaran.",
+            },
+            {
+              label: "Kafe & restoran",
+              name: "Kafe Kita",
+              template: "coffee-shop",
+              prompt:
+                "Website kafe yang hangat dan modern. Tampilkan cerita usaha, menu unggulan, jam buka, dan informasi kontak.",
+            },
+            {
+              label: "Portofolio kreatif",
+              name: "Portofolio Saya",
+              template: "portfolio",
+              prompt:
+                "Portofolio kreatif minimalis dengan perkenalan diri, karya pilihan, layanan, dan kontak kolaborasi.",
+            },
+          ] as const
+        ).map((idea) => (
+          <button
+            key={idea.label}
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setPrompt(idea.prompt);
+              setTemplate(idea.template);
+              if (!name.trim()) setName(idea.name);
+              promptField.current?.focus();
+            }}
+          >
+            {idea.label}
+            <span aria-hidden="true">↗</span>
+          </button>
+        ))}
+      </div>
+      <div className="generator-method-heading">
+        <h3>Pilih metode mulai</h3>
+        <p>Alur yang sesuai dengan cara Anda bekerja.</p>
+      </div>
+      <div className="generator-methods">
+        <button
+          type="button"
+          className="generator-method generator-method-ai"
+          disabled={busy}
+          onClick={() => promptField.current?.focus()}
+        >
+          <span className="generator-method-tag">PROMPT → WEBSITE</span>
+          <span className="generator-method-icon">
+            <StudioIcon name="sparkles" />
+          </span>
+          <strong>Buat dengan AI</strong>
+          <p>
+            Jelaskan kebutuhan website Anda. Hasil dari backend selalu ditinjau
+            sebelum disimpan.
+          </p>
+          <span className="generator-method-action">
+            Tulis ide Anda <span aria-hidden="true">→</span>
+          </span>
+        </button>
+        <div className="generator-method generator-method-template">
+          <span className="generator-method-icon">
+            <StudioIcon name="layout" />
+          </span>
+          <strong>Mulai dari template</strong>
+          <p>
+            Gunakan struktur siap pakai dan sesuaikan isinya. Tersedia secara
+            lokal, tanpa AI.
+          </p>
+          <label htmlFor="fallback-template">Fallback template</label>
+          <select
+            id="fallback-template"
+            value={template}
+            onChange={(e) => setTemplate(e.target.value as TemplateId)}
+            disabled={busy}
+          >
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+          <button
+            className="secondary"
+            type="button"
+            disabled={busy}
+            onClick={fallback}
+          >
+            Use local template fallback <span aria-hidden="true">→</span>
+          </button>
+        </div>
+        <button
+          type="button"
+          className="generator-method"
+          disabled={busy}
+          onClick={close}
+        >
+          <span className="generator-method-icon">
+            <StudioIcon name="edit" />
+          </span>
+          <strong>Lanjutkan di studio</strong>
+          <p>
+            Kembali ke proyek aktif. Susun komponen dan atur konten langsung di
+            canvas visual.
+          </p>
+          <span className="generator-method-action">
+            Buka proyek aktif <span aria-hidden="true">→</span>
+          </span>
         </button>
       </div>
       <p className="manager-help">
@@ -350,69 +629,6 @@ export function WebsiteGenerator({
         project. Existing projects are never replaced. Do not submit
         confidential data to a cloud provider.
       </p>
-      <form onSubmit={(event) => void run(event)}>
-        <div className="manager-grid">
-          <div>
-            <label htmlFor="website-name">Website name</label>
-            <input
-              id="website-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={200}
-              required
-              disabled={busy}
-            />
-            <label htmlFor="website-prompt">Website prompt</label>
-            <textarea
-              id="website-prompt"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              maxLength={GENERATION_LIMITS.promptCharacters}
-              required
-              rows={4}
-              disabled={busy}
-            />
-            <p className="manager-help">
-              The prompt is stored as the project description only if you
-              explicitly save the candidate.
-            </p>
-            <button className="primary" type="submit" disabled={busy}>
-              Generate candidate
-            </button>
-            {busy && (
-              <button className="secondary" type="button" onClick={cancel}>
-                Cancel generation
-              </button>
-            )}
-          </div>
-          <div>
-            <label htmlFor="fallback-template">Fallback template</label>
-            <select
-              id="fallback-template"
-              value={template}
-              onChange={(e) => setTemplate(e.target.value as TemplateId)}
-              disabled={busy}
-            >
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-            <button
-              className="secondary"
-              type="button"
-              disabled={busy}
-              onClick={fallback}
-            >
-              Use local template fallback
-            </button>
-            <p className="manager-help">
-              Template generation works without the backend. It is not AI.
-            </p>
-          </div>
-        </div>
-      </form>
       {busy && (
         <p className="manager-notice" aria-live="polite">
           Generating candidate… Nothing will be auto-saved.
@@ -427,6 +643,14 @@ export function WebsiteGenerator({
           data-schema-validation={receipt.schemaValidation}
           data-transport-calls={receipt.transportCalls}
           data-provider-status={receipt.providerStatus}
+          data-provider-headers-ms={receipt.providerTimings?.headersMs}
+          data-provider-first-byte-ms={receipt.providerTimings?.firstByteMs}
+          data-provider-body-complete-ms={
+            receipt.providerTimings?.bodyCompleteMs
+          }
+          data-provider-response-complete-ms={
+            receipt.providerTimings?.responseCompleteMs
+          }
           data-provider-rpc-status={receipt.providerRpcStatus}
           data-provider-error-category={receipt.providerErrorCategory}
           data-provider-retryable={receipt.providerRetryable}
@@ -447,6 +671,20 @@ export function WebsiteGenerator({
           {receipt.providerStatus !== undefined
             ? ` · Provider HTTP: ${receipt.providerStatus}`
             : ""}
+          {receipt.providerTimings && (
+            <>
+              {` · Provider headers: ${receipt.providerTimings.headersMs} ms`}
+              {receipt.providerTimings.firstByteMs !== undefined
+                ? ` · First body byte: ${receipt.providerTimings.firstByteMs} ms`
+                : ""}
+              {receipt.providerTimings.bodyCompleteMs !== undefined
+                ? ` · Body complete: ${receipt.providerTimings.bodyCompleteMs} ms`
+                : ""}
+              {receipt.providerTimings.responseCompleteMs !== undefined
+                ? ` · Response parsed: ${receipt.providerTimings.responseCompleteMs} ms`
+                : ""}
+            </>
+          )}
           {receipt.providerErrorCategory
             ? ` · Category: ${receipt.providerErrorCategory} · Potentially retryable: ${String(receipt.providerRetryable)} (does not authorize retry)`
             : ""}
@@ -469,9 +707,19 @@ export function WebsiteGenerator({
         </p>
       )}
       {candidate && (
-        <section aria-label="Candidate preview">
+        <section className="generator-review" aria-label="Candidate preview">
           <div className="manager-list-heading">
             <h3>{candidate.name}</h3>
+            {candidate.design && (
+              <p className="candidate-design-label">
+                Design ·{" "}
+                {
+                  designPresets.find(
+                    (preset) => preset.id === candidate.design?.preset,
+                  )?.label
+                }
+              </p>
+            )}
             <strong>
               {candidate.generation?.kind === "template"
                 ? "Template fallback — not AI"
@@ -484,6 +732,39 @@ export function WebsiteGenerator({
             Candidate ID: {candidate.id} ·{" "}
             {saved ? "Saved as a new project" : "Not saved"}
           </p>
+          <div className="generator-review-summary">
+            <div>
+              <span>STRUKTUR WEBSITE</span>
+              <strong>{candidate.blocks.length} building blocks</strong>
+              <p>Konten kandidat telah melewati validasi schema.</p>
+            </div>
+            <div>
+              <span>PENYIMPANAN</span>
+              <strong>
+                {saved ? "Tersimpan secara lokal" : "Belum disimpan"}
+              </strong>
+              <p>Simpan sebagai proyek baru untuk melanjutkan di studio.</p>
+            </div>
+          </div>
+          <GenerationCompleteness
+            project={candidate}
+            profile={candidateProfile}
+          />
+          <details className="generator-block-outline">
+            <summary>
+              Tinjau struktur komponen{" "}
+              <span>{candidate.blocks.length} blocks</span>
+            </summary>
+            <ol>
+              {candidate.blocks.map((block, index) => (
+                <li key={block.id}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <StudioIcon name="layout" />
+                  <strong>{block.type}</strong>
+                </li>
+              ))}
+            </ol>
+          </details>
           {editSession ? (
             <section
               aria-label="Candidate editor"

@@ -30,6 +30,46 @@ function fill() {
   });
 }
 describe("candidate generation UI", () => {
+  it("shows reached provider timing stages on timeout without creating or saving a candidate", async () => {
+    render(
+      <WebsiteGenerator
+        context="timing"
+        onClose={() => {}}
+        onOpen={() => true}
+        generate={async () => {
+          throw new GenerationFailure(
+            "timeout",
+            "Generation timed out. No candidate was saved.",
+            {
+              requestId: "11111111-1111-4111-8111-111111111111",
+              startedAt: "2026-10-22T00:00:00.000Z",
+              finishedAt: "2026-10-22T00:02:00.000Z",
+              durationMs: 120000,
+              outcome: "timeout",
+              schemaValidation: "not_attempted",
+              httpStatus: 504,
+              providerStatus: 200,
+              providerAttempts: 1,
+              transportCalls: 1,
+              providerTimings: { headersMs: 100, firstByteMs: 200 },
+            },
+          );
+        }}
+      />,
+    );
+    fill();
+    fireEvent.click(screen.getByRole("button", { name: "Generate candidate" }));
+    await screen.findByRole("alert");
+    const receipt = screen.getByRole("status", { name: "Generation status" });
+    expect(receipt).toHaveTextContent("Provider headers: 100 ms");
+    expect(receipt).toHaveTextContent("First body byte: 200 ms");
+    expect(receipt).not.toHaveTextContent("Body complete:");
+    expect(receipt).not.toHaveTextContent("Response parsed:");
+    expect(
+      screen.queryByRole("button", { name: "Save candidate as new project" }),
+    ).toBeNull();
+    expect(localStorage.length).toBe(0);
+  });
   it.each([
     "provider_error",
     "validation_error",
@@ -101,6 +141,14 @@ describe("candidate generation UI", () => {
       ).toBeDisabled();
       await act(async () => {
         await vi.advanceTimersByTimeAsync(GENERATION_LIMITS.totalTimeoutMs + 1);
+      });
+      expect(
+        screen.getByRole("button", { name: "Generate candidate" }),
+      ).toBeDisabled();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(
+          GENERATION_LIMITS.clientTimeoutMs - GENERATION_LIMITS.totalTimeoutMs,
+        );
       });
       expect(
         screen.getByRole("button", { name: "Generate candidate" }),
@@ -222,5 +270,125 @@ describe("candidate generation UI", () => {
     expect(localStorage.getItem(projectKey(candidate.id))).toBe(
       "existing data",
     );
+  });
+});
+
+describe("generation design direction", () => {
+  beforeEach(() => localStorage.clear());
+  it("sends the selected direction and persists it only on explicit Save", async () => {
+    localStorage.setItem("unrelated-project", "preserve");
+    const generate = vi.fn(async (input) => ({
+      candidate: buildCandidate(
+        JSON.stringify({
+          blocks: [
+            { id: "intro", type: "heading", text: "Mock candidate heading" },
+          ],
+        }),
+        input,
+        { id: "mock", model: "design-fixture" },
+        "design-candidate",
+      ),
+      mode: "mock" as const,
+    }));
+    render(
+      <WebsiteGenerator
+        context="design"
+        onClose={() => {}}
+        onOpen={() => true}
+        generate={generate}
+      />,
+    );
+    fill();
+    fireEvent.change(screen.getByLabelText("Design direction"), {
+      target: { value: "ocean-modern" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate candidate" }));
+    await screen.findByRole("heading", { name: "Mock candidate heading" });
+    expect(generate.mock.calls[0][0]).toEqual({
+      ...request,
+      designPreference: "ocean-modern",
+    });
+    expect(
+      screen
+        .getByRole("region", { name: "Candidate preview" })
+        .querySelector("[data-design]"),
+    ).toHaveAttribute("data-design", "ocean-modern");
+    expect(localStorage.getItem(projectKey("design-candidate"))).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save candidate as new project" }),
+    );
+    expect(
+      JSON.parse(localStorage.getItem(projectKey("design-candidate"))!),
+    ).toMatchObject({ design: { preset: "ocean-modern" }, revision: 0 });
+    expect(localStorage.getItem("unrelated-project")).toBe("preserve");
+  });
+  it("keeps an AI-selected direction when the user leaves selection automatic", async () => {
+    render(
+      <WebsiteGenerator
+        context="auto"
+        onClose={() => {}}
+        onOpen={() => true}
+        generate={async () => ({
+          candidate: { ...candidate, design: { preset: "ember-studio" } },
+          mode: "mock",
+        })}
+      />,
+    );
+    fill();
+    fireEvent.click(screen.getByRole("button", { name: "Generate candidate" }));
+    await screen.findByRole("heading", { name: "Mock candidate heading" });
+    expect(
+      screen
+        .getByRole("region", { name: "Candidate preview" })
+        .querySelector("[data-design]"),
+    ).toHaveAttribute("data-design", "ember-studio");
+    expect(localStorage.length).toBe(0);
+  });
+  it("supports a styled local template without claiming AI or calling its transport", () => {
+    const generate = vi.fn();
+    render(
+      <WebsiteGenerator
+        context="template-design"
+        onClose={() => {}}
+        onOpen={() => true}
+        generate={generate}
+      />,
+    );
+    fill();
+    fireEvent.change(screen.getByLabelText("Design direction"), {
+      target: { value: "midnight-product" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Use local template fallback" }),
+    );
+    expect(
+      screen
+        .getByRole("region", { name: "Candidate preview" })
+        .querySelector("[data-design]"),
+    ).toHaveAttribute("data-design", "midnight-product");
+    expect(generate).not.toHaveBeenCalled();
+    expect(localStorage.length).toBe(0);
+  });
+  it("rejects a response that ignores the explicit design selection", async () => {
+    render(
+      <WebsiteGenerator
+        context="mismatch"
+        onClose={() => {}}
+        onOpen={() => true}
+        generate={async () => ({ candidate, mode: "mock" })}
+      />,
+    );
+    fill();
+    fireEvent.change(screen.getByLabelText("Design direction"), {
+      target: { value: "ocean-modern" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate candidate" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Invalid generation candidate",
+    );
+    expect(
+      screen.queryByRole("region", { name: "Candidate preview" }),
+    ).toBeNull();
+    expect(localStorage.length).toBe(0);
   });
 });

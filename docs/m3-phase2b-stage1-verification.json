@@ -1,0 +1,320 @@
+{
+  "branch": "main",
+  "head": "29ae78d",
+  "tests": {
+    "baselineServer": {
+      "reportPath": "C:/Users/vrandly/AppData/Local/hermes/cache/scratch/siteforge-stage1-baseline-server.json",
+      "success": true,
+      "passed": 141,
+      "failed": 0,
+      "pending": 0,
+      "files": [
+        {
+          "path": "C:/Projects/siteforge-ai/server/config.test.ts",
+          "passed": 11,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/generation-observation.test.ts",
+          "passed": 39,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/generation-server.test.ts",
+          "passed": 32,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/openrouter-config.test.ts",
+          "passed": 7,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/openrouter-limits.test.ts",
+          "passed": 3,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/openrouter-provider.test.ts",
+          "passed": 49,
+          "failed": 0
+        }
+      ]
+    },
+    "focusedBackend": {
+      "reportPath": "C:/Users/vrandly/AppData/Local/hermes/cache/scratch/siteforge-stage1-focused.json",
+      "success": true,
+      "passed": 97,
+      "failed": 0,
+      "pending": 0,
+      "files": [
+        {
+          "path": "C:/Projects/siteforge-ai/server/edit-provider.test.ts",
+          "passed": 10,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/edit-security.test.ts",
+          "passed": 47,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/edit-server.test.ts",
+          "passed": 40,
+          "failed": 0
+        }
+      ]
+    },
+    "selectedServer": {
+      "reportPath": "C:/Users/vrandly/AppData/Local/hermes/cache/scratch/siteforge-stage1-server-regression.json",
+      "success": true,
+      "passed": 272,
+      "failed": 0,
+      "pending": 0,
+      "files": [
+        {
+          "path": "C:/Projects/siteforge-ai/server/config.test.ts",
+          "passed": 11,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/edit-provider.test.ts",
+          "passed": 10,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/edit-security.test.ts",
+          "passed": 47,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/edit-server.test.ts",
+          "passed": 40,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/generation-observation.test.ts",
+          "passed": 39,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/generation-server.test.ts",
+          "passed": 32,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/openrouter-config.test.ts",
+          "passed": 7,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/openrouter-limits.test.ts",
+          "passed": 3,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/openrouter-provider.test.ts",
+          "passed": 49,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/openrouter-request.test.ts",
+          "passed": 13,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/openrouter-settings.test.ts",
+          "passed": 7,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/openrouter-telemetry.test.ts",
+          "passed": 1,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/routed-generation-provider.test.ts",
+          "passed": 10,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/start.test.ts",
+          "passed": 2,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/website-plan-provider.test.ts",
+          "passed": 1,
+          "failed": 0
+        }
+      ]
+    },
+    "preservedFrontend": {
+      "reportPath": "C:/Users/vrandly/AppData/Local/hermes/cache/scratch/siteforge-stage1-frontend-regression.json",
+      "success": true,
+      "passed": 170,
+      "failed": 0,
+      "pending": 0,
+      "files": [
+        {
+          "path": "C:/Projects/siteforge-ai/src/ai/edit-proposal.test.ts",
+          "passed": 46,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/ai/mock-chat-editor.test.ts",
+          "passed": 11,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/ai/structured-edit.test.ts",
+          "passed": 87,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/app/chat-workspace.test.tsx",
+          "passed": 7,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/app/ChatEditor.test.tsx",
+          "passed": 19,
+          "failed": 0
+        }
+      ]
+    }
+  },
+  "finalUniqueTests": 442,
+  "existingServerRegressions": 175,
+  "sourceInventory": [
+    {
+      "path": "src/ai/edit-contract.ts",
+      "bytes": 1639,
+      "lines": 48,
+      "sha256": "30272a36ab2aa30483fd01a1235f64377d2b09eb8118250f58fb686e9dac2f1b"
+    },
+    {
+      "path": "server/edit-provider.ts",
+      "bytes": 1698,
+      "lines": 47,
+      "sha256": "18e883af8e73736de13a13f666dc030bd141895697b45a42c813e12579a0571f"
+    },
+    {
+      "path": "server/edit-validation.ts",
+      "bytes": 1527,
+      "lines": 40,
+      "sha256": "72c6bdc6438d8b552c454700f82974fd5d3bd5355128bd3ee85dd33ee1d026a4"
+    },
+    {
+      "path": "server/edit-server.test.ts",
+      "bytes": 16232,
+      "lines": 516,
+      "sha256": "af31a84631726bbba4d268b047bc4638de269653c6ef529a7d6a381e60866020"
+    },
+    {
+      "path": "server/edit-security.test.ts",
+      "bytes": 13147,
+      "lines": 438,
+      "sha256": "e39a8da0ed06a0e560bcc904a7d7340f4ac1c2ef6909daf7428a8ab9e48f7b0b"
+    },
+    {
+      "path": "server/edit-provider.test.ts",
+      "bytes": 4161,
+      "lines": 134,
+      "sha256": "75134d73e2b2ce6ee5eaeb459c9d808b2b4f3bbd85f2a64e90533d4e4a4f4cb2"
+    },
+    {
+      "path": "server/generation-server.ts",
+      "bytes": 21870,
+      "lines": 644,
+      "sha256": "4a1e5b170e8833808aeeac5603d1b52ff6a326748229419988f4149ad36ecfe9"
+    },
+    {
+      "path": "server/startup.ts",
+      "bytes": 1075,
+      "lines": 27,
+      "sha256": "7bec494dd0060a8be6c071c3073fe47d6ce4658b2bba83a410d819c93ca89863"
+    }
+  ],
+  "protectedFilesUnchanged": [
+    "src/app/ChatEditor.tsx",
+    "src/ai/structured-edit.ts",
+    "src/ai/edit-proposal.ts",
+    "src/ai/mock-chat-editor.ts",
+    "src/project-schema/project.ts",
+    "server/openrouter-provider.ts",
+    "server/openrouter-request.ts",
+    "server/config.ts"
+  ],
+  "milestone": "M3 Phase 2B — Implementation Stage 1",
+  "status": "complete; stopped before Stage 2 and live inference",
+  "scope": {
+    "liveEditInferenceEnabled": false,
+    "externalAiApiCallsMade": false,
+    "frontendWiringImplemented": false,
+    "canonicalProjectSchemaChanged": false,
+    "autoApplyOrSaveAdded": false,
+    "globalSettingsChanged": false,
+    "commitOrStagingPerformed": false,
+    "historical770SuiteRerun": false,
+    "browserE2ERun": false
+  },
+  "commands": {
+    "focusedBackend": "./node_modules/.bin/vitest run --config vitest.server.config.ts server/edit-server.test.ts server/edit-security.test.ts server/edit-provider.test.ts --silent --reporter=default --reporter=json --outputFile=C:/Users/vrandly/AppData/Local/hermes/cache/scratch/siteforge-stage1-focused.json",
+    "selectedServer": "./node_modules/.bin/vitest run --config vitest.server.config.ts server/edit-server.test.ts server/edit-security.test.ts server/edit-provider.test.ts server/generation-server.test.ts server/generation-observation.test.ts server/openrouter-provider.test.ts server/openrouter-limits.test.ts server/openrouter-config.test.ts server/config.test.ts server/start.test.ts server/routed-generation-provider.test.ts server/website-plan-provider.test.ts server/openrouter-request.test.ts server/openrouter-settings.test.ts server/openrouter-telemetry.test.ts --silent --reporter=default --reporter=json --outputFile=C:/Users/vrandly/AppData/Local/hermes/cache/scratch/siteforge-stage1-server-regression.json",
+    "preservedFrontend": "./node_modules/.bin/vitest run src/ai/structured-edit.test.ts src/ai/edit-proposal.test.ts src/ai/mock-chat-editor.test.ts src/app/ChatEditor.test.tsx src/app/chat-workspace.test.tsx --silent --reporter=default --reporter=json --outputFile=C:/Users/vrandly/AppData/Local/hermes/cache/scratch/siteforge-stage1-frontend-regression.json",
+    "typecheck": "npm run typecheck",
+    "bundle": "npm run verify:bundle",
+    "format": "./node_modules/.bin/prettier --check src/ai/edit-contract.ts server/edit-provider.ts server/edit-validation.ts server/edit-server.test.ts server/edit-security.test.ts server/edit-provider.test.ts server/generation-server.ts server/startup.ts",
+    "diffWhitespace": "git diff --check"
+  },
+  "qualityGates": {
+    "typecheck": true,
+    "bundleBuildAndCredentialBoundary": true,
+    "prettier": true,
+    "gitDiffCheck": true,
+    "note": "Git emitted LF-to-CRLF policy warnings, not whitespace errors."
+  },
+  "independentReview": {
+    "initial": {
+      "passed": false,
+      "securityConcerns": [],
+      "logicErrors": [
+        "Intermediate block-count check rejected valid add-then-remove replacement at the 200-block boundary."
+      ]
+    },
+    "repair": {
+      "red": {
+        "failed": 1,
+        "passed": 48,
+        "reason": "Expected 200, received 502 for the new replacement regression."
+      },
+      "green": {
+        "passed": 50,
+        "failed": 0,
+        "files": 2
+      },
+      "change": "Enforce the unchanged 200-block ceiling after processing the sequence; cover final overflow and unsupported instruction with heading present."
+    },
+    "final": {
+      "status": "passed",
+      "passed": true,
+      "securityConcerns": [],
+      "logicErrors": [],
+      "suggestions": [],
+      "summary": "Independent read-only review found no concrete security or logic issues. Final block-count validation permits the 200-block replacement and preserves overflow rejection. Synthetic-only selection, strict contracts, security guards, limits, cancellation, shared admission, protected frontend contracts, and canonical schema remain intact."
+    }
+  },
+  "limitations": [
+    "Synthetic named fixture only; no live adapter or frontend HTTP client.",
+    "Backend validates supplied context, not authoritative browser draft freshness; preserved host snapshot validation remains mandatory.",
+    "Grounding and rendered-anchor validation remain host responsibilities.",
+    "Operations cannot reference future IDs of additions; reorder after add requires a subsequent proposal.",
+    "No edit-specific telemetry or browser E2E acceptance in Stage 1."
+  ],
+  "preexistingUntrackedPreserved": [
+    ".npmrc",
+    "docs/",
+    "utput === STAGED VALIDATION ==="
+  ]
+}

@@ -16,3 +16,11 @@ backups/
 *.pfx
 
 docs/smoke-observations/
+
+# Local credentials and publishing metadata (retained from origin/main)
+!.env.example
+.npmrc
+.openai/
+.vercel/
+.DS_Store
+Thumbs.db

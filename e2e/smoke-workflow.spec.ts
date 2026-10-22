@@ -9,9 +9,14 @@ import {
 } from "./generation-observer";
 import { coffeeAcceptance } from "../scripts/coffee-acceptance-scenario";
 import { buildWebsitePlanRequestBody } from "../server/website-plan-request";
+import { GEMINI_GENERATION_MODEL_ORDER } from "../server/gemini-generation-profile";
 const legacyPrompt =
   'Create exactly two blocks: one heading titled "SiteForge smoke test" and one short paragraph saying this is synthetic test content. Do not include links, images, contact details, prices, or factual business claims.';
-const model = "gemini-3.5-flash-lite";
+const premiumCafe = {
+  name: "Kedai Kopi Premium Manado",
+  prompt:
+    "Buat website coffee shop premium di Manado dalam Bahasa Indonesia: modern, elegan, minimalis, dan mobile-friendly. Gunakan tepat enam blok dengan urutan: hero, image untuk foto hero, features bergaya menu, image bergaya gallery, section tentang café, contact. Jangan mengarang menu nyata, harga, alamat, jam buka, nomor telepon, email, klaim, ulasan, atau sertifikasi. Labeli nama item menu sebagai placeholder, kosongkan harga dan informasi kontak yang belum diberikan, serta gunakan hanya placeholder gambar lokal yang tersedia.",
+};
 test("one guarded synthetic submission with current frontend, backend and bounded observer", async ({
   page,
   context,
@@ -19,12 +24,35 @@ test("one guarded synthetic submission with current frontend, backend and bounde
   const mode = process.env.SITEFORGE_OBSERVER_MODE;
   const scenario =
     process.env.SITEFORGE_OBSERVER_SCENARIO ?? "smoke-two-blocks";
-  expect(["smoke-two-blocks", "coffee-shop"]).toContain(scenario);
+  expect(["smoke-two-blocks", "coffee-shop", "premium-cafe"]).toContain(
+    scenario,
+  );
   const coffee = scenario === "coffee-shop";
-  const name = coffee ? coffeeAcceptance.name : "SiteForge Smoke Test";
-  const prompt = coffee ? coffeeAcceptance.prompt : legacyPrompt;
-  expect(["mock", "live-approved"]).toContain(mode);
-  const live = mode === "live-approved";
+  const name =
+    scenario === "coffee-shop"
+      ? coffeeAcceptance.name
+      : scenario === "premium-cafe"
+        ? premiumCafe.name
+        : "SiteForge Smoke Test";
+  const prompt =
+    scenario === "coffee-shop"
+      ? coffeeAcceptance.prompt
+      : scenario === "premium-cafe"
+        ? premiumCafe.prompt
+        : legacyPrompt;
+  expect([
+    "mock",
+    "mock-routed",
+    "live-approved",
+    "live-routed-approved",
+  ]).toContain(mode);
+  const live = mode === "live-approved" || mode === "live-routed-approved";
+  const routed = mode === "mock-routed" || mode === "live-routed-approved";
+  const model = routed
+    ? GEMINI_GENERATION_MODEL_ORDER[0]
+    : "gemini-3.5-flash-lite";
+  const models = routed ? [...GEMINI_GENERATION_MODEL_ORDER] : [model];
+  const outboundLimit = routed ? 2 : 1;
   const pid = process.env.SITEFORGE_OBSERVER_PID;
   if (live) expect(pid).toMatch(/^[1-9][0-9]{0,9}$/);
   const folder = resolve("docs/smoke-observations");
@@ -61,6 +89,12 @@ test("one guarded synthetic submission with current frontend, backend and bounde
       "scripts/coffee-acceptance-scenario.ts",
       "scripts/mock-coffee-smoke.ts",
       "server/smoke-startup.ts",
+      "server/gemini-generation-profile.ts",
+      "server/routed-generation-provider.ts",
+      "server/model-router.ts",
+      "server/model-router-config.ts",
+      "server/gemini-model-catalog.ts",
+      "src/ai/model-routing.ts",
       "src/ai/generation-client.ts",
       "src/app/WebsiteGenerator.tsx",
       "e2e/generation-observer.ts",
@@ -82,6 +116,8 @@ test("one guarded synthetic submission with current frontend, backend and bounde
     editingScreenshot: string | null;
     mode: string | undefined;
     model: string;
+    models: string[];
+    outboundLimit: number;
     launcherPid: string | null;
     state: string;
     fingerprints: Record<string, string>;
@@ -101,6 +137,8 @@ test("one guarded synthetic submission with current frontend, backend and bounde
     editingScreenshot: null,
     mode,
     model,
+    models,
+    outboundLimit,
     launcherPid: live ? pid! : null,
     state: "prepared",
     fingerprints,
@@ -115,6 +153,8 @@ test("one guarded synthetic submission with current frontend, backend and bounde
     saveClicked: false,
     screenshot: null,
   };
+  const expectedBlockCount =
+    scenario === "coffee-shop" ? 3 : scenario === "premium-cafe" ? 6 : 2;
   // Exclusive ledger precedes submission. Never reuse a live PID ledger or retry a run.
   writeFileSync(recordPath, JSON.stringify(record, null, 2), {
     flag: "wx",
@@ -124,7 +164,7 @@ test("one guarded synthetic submission with current frontend, backend and bounde
     writeFileSync(recordPath, JSON.stringify(record, null, 2), { flush: true });
   try {
     if (live) {
-      const command = `$p=Get-CimInstance Win32_Process -Filter "ProcessId=${pid}"; $c=@(Get-NetTCPConnection -LocalPort 5188 -State Listen -ErrorAction SilentlyContinue); [pscustomobject]@{pid=$p.ProcessId;isLauncher=($p.Name -eq 'node.exe' -and $p.CommandLine -match 'smoke-start\\.ts.*--live');ownsPort=($c.OwningProcess -contains ${pid});loopback=($c.LocalAddress -contains '127.0.0.1')} | ConvertTo-Json -Compress`;
+      const command = `$p=Get-CimInstance Win32_Process -Filter "ProcessId=${pid}"; $c=@(Get-NetTCPConnection -LocalPort 5188 -State Listen -ErrorAction SilentlyContinue); [pscustomobject]@{pid=$p.ProcessId;isLauncher=($p.Name -eq 'node.exe' -and $p.CommandLine -match 'smoke-start\\.ts.*--live${routed ? "-routed" : ""}\\s*$');ownsPort=($c.OwningProcess -contains ${pid});loopback=($c.LocalAddress -contains '127.0.0.1')} | ConvertTo-Json -Compress`;
       const identity = JSON.parse(
         execFileSync("powershell.exe", ["-NoProfile", "-Command", command], {
           encoding: "utf8",
@@ -144,6 +184,9 @@ test("one guarded synthetic submission with current frontend, backend and bounde
         pid: Number(pid),
         contract: "website-plan-v1",
         model,
+        models,
+        routed,
+        outboundLimit,
         transportCalls: 0,
         stopped: false,
       });
@@ -242,10 +285,15 @@ test("one guarded synthetic submission with current frontend, backend and bounde
     expect(record.observation).toMatchObject({
       uiState: "success",
       schemaValidation: "valid",
-      transportCalls: 1,
-      blockCount: coffee ? 3 : 2,
+      blockCount: expectedBlockCount,
       candidatePreview: true,
     });
+    expect(record.observation.transportCalls).toBeGreaterThanOrEqual(1);
+    expect(record.observation.transportCalls).toBeLessThanOrEqual(
+      outboundLimit,
+    );
+    if (mode === "mock-routed")
+      expect(record.observation.transportCalls).toBe(2);
     if (coffee) {
       const preview = panel.getByRole("region", {
         name: "Candidate preview",

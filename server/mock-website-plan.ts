@@ -19,7 +19,12 @@ export function planFromMockContent(value: unknown) {
       if (target && targetIndex < 0)
         throw new Error("Invalid synthetic anchor");
       return {
-        type: block.type,
+        type:
+          block.type === "menu"
+            ? "features"
+            : block.type === "gallery"
+              ? "image"
+              : block.type,
         text: block.text,
         body:
           block.type === "hero"
@@ -32,15 +37,35 @@ export function planFromMockContent(value: unknown) {
         action: block.type === "hero" ? block.ctaText : "",
         target: target ? String(targetIndex) : "",
         style:
-          block.type === "section"
+          block.type === "menu"
+            ? "menu"
+            : block.type === "gallery"
+              ? "gallery"
+              : block.type === "section"
             ? block.tone
             : block.type === "features"
               ? block.layout
               : "",
-        items: block.type === "features" ? block.items : [],
+        items:
+          block.type === "features" || block.type === "menu"
+            ? block.items.map((item) => ({
+                title: item.title,
+                description: item.description,
+                ...(block.type === "menu" && "price" in item && item.price
+                  ? { price: item.price }
+                  : {}),
+              }))
+            : block.type === "gallery"
+              ? block.items.map((item) => ({
+                  title: item.caption,
+                  description: item.alt,
+                }))
+              : [],
         email: block.type === "contact" ? block.email : "",
         phone: block.type === "contact" ? block.phone : "",
         address: block.type === "contact" ? block.address : "",
+        openingHours:
+          block.type === "contact" ? block.openingHours : "",
       };
     }),
   };
@@ -53,7 +78,12 @@ export function createMockPlanProvider(): WebsiteGenerationProvider {
     async generate(request, signal, context) {
       const output = await legacy.generate(request, signal, context);
       return {
-        text: JSON.stringify(planFromMockContent(JSON.parse(output.text))),
+        text: JSON.stringify({
+          ...planFromMockContent(JSON.parse(output.text)),
+          design: /\b(coffee|coffe|kopi|cafe|kafe)\b/i.test(request.prompt)
+            ? "sage-editorial"
+            : "default",
+        }),
       };
     },
   };

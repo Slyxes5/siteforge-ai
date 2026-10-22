@@ -121,6 +121,7 @@ test("compiles all eight blocks into canonical v1 preserving order, language, co
       email: "halo@example.test",
       phone: "+60123456789",
       address: "Jalan Mawar",
+      openingHours: "",
     },
   ]);
   expect(validateGenerationCandidate(project, request)).toEqual(project);
@@ -130,7 +131,7 @@ test("provider projection stays small and uniform with enums and array bounds on
   expect(websitePlanJsonSchema).toMatchObject({
     type: "object",
     additionalProperties: false,
-    required: ["blocks"],
+    required: ["blocks", "design"],
     properties: {
       blocks: {
         type: "array",
@@ -380,11 +381,11 @@ test("rejects nonempty fields and styles not used by the block type", () => {
     heading: [],
     paragraph: [],
     button: ["target"],
-    image: ["body"],
+    image: ["body", "style", "items"],
     hero: ["body", "action", "target"],
     section: ["body", "style"],
     features: ["style", "items"],
-    contact: ["body", "email", "phone", "address"],
+    contact: ["body", "email", "phone", "address", "openingHours"],
   };
   for (const [type, fields] of Object.entries(allowed)) {
     const base = block(
@@ -433,6 +434,25 @@ test("rejects nonempty fields and styles not used by the block type", () => {
       false,
     );
   }
+  expect(
+    websitePlanSchema.safeParse({
+      blocks: [
+        block("image", {
+          items: [{ title: "Kopi", description: "Placeholder" }],
+        }),
+      ],
+    }).success,
+  ).toBe(false);
+  expect(
+    websitePlanSchema.safeParse({
+      blocks: [
+        block("image", {
+          style: "gallery",
+          items: [{ title: "Suasana", description: "Placeholder" }],
+        }),
+      ],
+    }).success,
+  ).toBe(true);
 });
 
 test("targets use canonical zero-based decimal indices of anchorable blocks", () => {

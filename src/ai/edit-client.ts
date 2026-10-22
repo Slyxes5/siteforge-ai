@@ -5,15 +5,23 @@ import {
   editResultSchema,
 } from "./edit-contract";
 import type { StructuredEditProvider } from "./structured-edit";
+import { OPENROUTER_EDIT_MODEL } from "./edit-source";
 
 type EditClientOutcome =
-  "cancelled" | "timeout" | "validation_error" | "provider_error" | "disabled";
+  | "cancelled"
+  | "timeout"
+  | "validation_error"
+  | "provider_error"
+  | "disabled"
+  | "refused";
 const messages: Record<EditClientOutcome, string> = {
   cancelled: "Edit request cancelled.",
   timeout: "Edit request timed out.",
   validation_error: "Invalid edit request or response.",
   provider_error: "Edit backend unavailable.",
-  disabled: "Synthetic editing is disabled.",
+  disabled: "Editing is disabled.",
+  refused:
+    "The edit request could not be fulfilled. Clarify the target or instruction.",
 };
 export class EditClientFailure extends Error {
   constructor(readonly outcome: EditClientOutcome) {
@@ -141,7 +149,11 @@ async function readBounded(
   if (!response.ok) {
     cancelBody(response.body);
     throw new EditClientFailure(
-      response.status === 504 ? "timeout" : "provider_error",
+      response.status === 504
+        ? "timeout"
+        : response.status === 422
+          ? "refused"
+          : "provider_error",
     );
   }
   const length = response.headers.get("Content-Length");
@@ -205,13 +217,26 @@ async function readBounded(
   }
 }
 
-/** Same-origin, synthetic-only transport; proposal validation and all mutations remain host-owned. */
+/** Same-origin transport pinned to an explicitly selected capability; mutations remain host-owned. */
 export function createHttpEditProvider(
   transport: typeof fetch = fetch,
-  options: { timeoutMs?: number } = {},
+  options: {
+    timeoutMs?: number;
+    mode?: "mock" | "live";
+    consent?: boolean;
+  } = {},
 ): StructuredEditProvider {
+  const mode = options.mode ?? "mock";
   return {
-    id: "synthetic",
+    id: mode === "live" ? "openrouter-edit" : "synthetic",
+    ...(mode === "live"
+      ? {
+          source: {
+            provider: "openrouter" as const,
+            model: OPENROUTER_EDIT_MODEL,
+          },
+        }
+      : {}),
     async propose(request, signal) {
       const scope = createDeadline(
         signal,
@@ -219,6 +244,11 @@ export function createHttpEditProvider(
       );
       try {
         scope.assertActive();
+        if (
+          !["mock", "live"].includes(mode) ||
+          (mode === "live" && options.consent !== true)
+        )
+          throw new EditClientFailure("validation_error");
         let body: string;
         try {
           const parsed = editRequestSchema.safeParse(request);
@@ -256,12 +286,15 @@ export function createHttpEditProvider(
           throw new EditClientFailure("validation_error");
         const status = parsedStatus.data;
         if (status.mode === "disabled") throw new EditClientFailure("disabled");
+        if (status.mode !== mode)
+          throw new EditClientFailure("validation_error");
         const result = await getResponse("/api/edit/propose", {
           ...common,
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "X-SiteForge-Session": status.sessionToken,
+            ...(mode === "live" ? { "X-SiteForge-Edit-Mode": "live" } : {}),
           },
           body,
         });
@@ -269,7 +302,8 @@ export function createHttpEditProvider(
           await readBounded(result, scope),
         );
         scope.assertActive();
-        if (!parsed.success) throw new EditClientFailure("validation_error");
+        if (!parsed.success || parsed.data.mode !== mode)
+          throw new EditClientFailure("validation_error");
         const raw = JSON.stringify(parsed.data.response);
         scope.assertActive();
         return raw;

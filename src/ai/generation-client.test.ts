@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { generateWebsite } from "./generation-client";
 import { buildCandidate } from "./generation-content";
+import { GENERATION_LIMITS } from "./website-generation";
 const input = { name: "Studio", prompt: "A local studio" };
 const provider = { id: "mock" as const, model: "fixture" };
 const candidate = buildCandidate(
@@ -37,6 +38,58 @@ function transport(
     .mockResolvedValueOnce(new Response(JSON.stringify(result)));
 }
 describe("same-origin generation client", () => {
+  it("waits beyond the OpenRouter provider deadline for its receipt, then enforces the client ceiling", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(Response.json(status))
+        .mockImplementationOnce(() => new Promise(() => {}));
+      let settled = false;
+      const pending = generateWebsite(
+        input,
+        new AbortController().signal,
+        fetcher,
+      )
+        .catch((error) => error)
+        .finally(() => {
+          settled = true;
+        });
+      await vi.advanceTimersByTimeAsync(125001);
+      expect(settled).toBe(false);
+      await vi.advanceTimersByTimeAsync(
+        GENERATION_LIMITS.clientTimeoutMs - 125000,
+      );
+      expect(await pending).toMatchObject({ outcome: "timeout" });
+      expect(fetcher).toHaveBeenCalledTimes(2);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("retains bounded provider timings from a timeout receipt", async () => {
+    const receipt = {
+      ...diagnostics,
+      outcome: "timeout",
+      schemaValidation: "not_attempted",
+      httpStatus: 504,
+      providerStatus: 200,
+      providerTimings: { headersMs: 10, firstByteMs: 50 },
+    };
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json(status))
+      .mockResolvedValueOnce(
+        Response.json(
+          { error: { message: "PRIVATE" }, diagnostics: receipt },
+          { status: 504 },
+        ),
+      );
+    await expect(
+      generateWebsite(input, new AbortController().signal, fetcher),
+    ).rejects.toMatchObject({ outcome: "timeout", diagnostics: receipt });
+  });
   it.each([
     [400, "invalid_request", false],
     [429, "rate_limit_or_quota", true],

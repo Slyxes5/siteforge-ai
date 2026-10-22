@@ -35,7 +35,7 @@ const blocks = [
   },
 ];
 describe("generation content boundary", () => {
-  it("preserves the provider anyOf contract with eight exclusive typed variants", () => {
+  it("preserves the provider anyOf contract with ten exclusive typed variants and no optional visual wire fields", () => {
     const schema = generatedContentJsonSchema as unknown as {
       properties: {
         blocks: {
@@ -50,7 +50,7 @@ describe("generation content boundary", () => {
       };
     };
     const variants = schema.properties.blocks.items.anyOf;
-    expect(variants).toHaveLength(8);
+    expect(variants).toHaveLength(10);
     const expected = [
       "id,type,text",
       "id,type,text",
@@ -59,7 +59,9 @@ describe("generation content boundary", () => {
       "id,type,text,subtitle,ctaText,ctaHref",
       "id,type,text,body,tone",
       "id,type,text,layout,items",
-      "id,type,text,body,email,phone,address",
+      "id,type,text,body,email,phone,address,openingHours",
+      "id,type,text,items",
+      "id,type,text,items",
     ];
     variants!.forEach((variant, index) => {
       expect(variant.required).toEqual(expected[index].split(","));
@@ -82,6 +84,8 @@ describe("generation content boundary", () => {
             "section",
             "features",
             "contact",
+            "menu",
+            "gallery",
           ][index],
         ],
       });

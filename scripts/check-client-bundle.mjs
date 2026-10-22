@@ -16,6 +16,7 @@ const forbidden = [
   /-----BEGIN .*PRIVATE KEY-----/,
   /SITEFORGE_GEMINI_API_KEY/,
   /SITEFORGE_OPENROUTER_API_KEY/,
+  /SITEFORGE_EDIT_OPENROUTER_API_KEY/,
   /openrouter\.ai\/api\/v1/,
   /generativelanguage\.googleapis\.com/,
   /x-goog-api-key/,

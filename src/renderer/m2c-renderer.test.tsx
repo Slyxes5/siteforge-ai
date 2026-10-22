@@ -36,7 +36,12 @@ test("M2C renders safe editable feature lists and static contact with no fake ac
   ).toBeInTheDocument();
   expect(screen.getByText("Service description")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Contact" })).toBeInTheDocument();
-  expect(screen.getByText("Email not provided")).toBeInTheDocument();
+  expect(
+    screen.getByText("Add your public contact details here."),
+  ).toBeInTheDocument();
+  expect(screen.queryByText("Email")).toBeNull();
+  expect(screen.queryByText("Phone")).toBeNull();
+  expect(screen.queryByText("Address")).toBeNull();
   expect(container.querySelector(".feature-items.layout-grid")).not.toBeNull();
   expect(container.querySelector("#contact")).not.toBeNull();
   expect(container.querySelector("script, form")).toBeNull();

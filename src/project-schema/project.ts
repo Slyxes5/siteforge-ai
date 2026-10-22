@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { projectDesignSchema } from "./design";
 
 const id = z.string().min(1);
 const text = z.string().min(1).max(10000);
@@ -34,6 +35,9 @@ export const blockSchema = z.discriminatedUnion("type", [
     subtitle: optionalText,
     ctaText: optionalText,
     ctaHref: safeUrlSchema,
+    visual: z.enum(["plain", "coffee-editorial"]).optional(),
+    imageSrc: safeUrlSchema.optional(),
+    imageAlt: optionalText.optional(),
   }),
   z.strictObject({
     id,
@@ -59,12 +63,46 @@ export const blockSchema = z.discriminatedUnion("type", [
   }),
   z.strictObject({
     id,
+    type: z.literal("menu"),
+    text,
+    items: z
+      .array(
+        z.strictObject({
+          title: z.string().min(1).max(200),
+          description: z.string().max(2000),
+          price: z.string().max(80).optional(),
+          imageSrc: safeUrlSchema.optional(),
+          imageAlt: optionalText.optional(),
+        }),
+      )
+      .min(1)
+      .max(12),
+  }),
+  z.strictObject({
+    id,
+    type: z.literal("gallery"),
+    text,
+    layout: z.enum(["grid", "carousel"]).optional(),
+    items: z
+      .array(
+        z.strictObject({
+          src: safeUrlSchema,
+          alt: optionalText,
+          caption: optionalText,
+        }),
+      )
+      .min(1)
+      .max(8),
+  }),
+  z.strictObject({
+    id,
     type: z.literal("contact"),
     text,
     body: optionalText,
     email: z.string().max(320),
     phone: z.string().max(80),
     address: z.string().max(500),
+    openingHours: z.string().max(500).optional(),
   }),
 ]);
 export const projectSchema = z.strictObject({
@@ -72,6 +110,7 @@ export const projectSchema = z.strictObject({
   id: z.string().min(1),
   name: z.string().min(1).max(200),
   description: z.string().max(4000).optional(),
+  design: projectDesignSchema.optional(),
   generation: z
     .union([
       z.strictObject({

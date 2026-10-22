@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage } from "node:http";
 import { randomBytes, randomUUID } from "node:crypto";
 import { ProviderError } from "./provider-error";
+import { liveEditSourceSchema } from "../src/ai/edit-source";
 import type { BackendEditProvider } from "./edit-provider";
 import { assertEditTargets } from "./edit-validation";
 import {
@@ -21,12 +22,15 @@ import { buildCandidate } from "../src/ai/generation-content";
 import { compileWebsitePlan } from "../src/ai/website-plan";
 import {
   GENERATION_LIMITS,
+  OPENROUTER_GENERATION_LIMITS,
   websiteGenerationRequestSchema,
   type WebsiteGenerationProvider,
 } from "../src/ai/website-generation";
-import type {
-  GenerationDiagnostics,
-  GenerationOutcome,
+import {
+  providerTimingsSchema,
+  type ProviderTimings,
+  type GenerationDiagnostics,
+  type GenerationOutcome,
 } from "../src/ai/generation-observation";
 export type GenerationEvent =
   | { event: "generation_start"; requestId: string; startedAt: string }
@@ -146,9 +150,20 @@ function abortable<T>(
 export function createGenerationServer(options: GenerationServerOptions = {}) {
   const sessionToken = randomBytes(32).toString("hex");
   const provider = options.provider;
+  const generationLimits =
+    provider?.id === "openrouter" ||
+    provider?.telemetryProvider === "openrouter"
+      ? OPENROUTER_GENERATION_LIMITS
+      : GENERATION_LIMITS;
   const editProvider = options.editProvider;
-  if (editProvider && editProvider.id !== "synthetic")
-    throw new Error("Only synthetic edit providers are supported.");
+  if (
+    editProvider &&
+    (editProvider.id === "synthetic"
+      ? editProvider.source !== undefined
+      : editProvider.id !== "openrouter-edit" ||
+        !liveEditSourceSchema.safeParse(editProvider.source).success)
+  )
+    throw new Error("Unsupported edit provider.");
   const editCeilings = {
     requestBytes: EDIT_LIMITS.requestBytes,
     responseBytes: EDIT_LIMITS.responseBytes,
@@ -171,6 +186,7 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
       : "live"
     : "disabled";
   const origins = options.allowedOrigins ?? [
+    "http://127.0.0.1:5173",
     "http://127.0.0.1:5178",
     "http://127.0.0.1:5189",
   ];
@@ -187,6 +203,7 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
     let providerAttempts = 0;
     let transportCalls = 0;
     let upstreamStatus: number | undefined;
+    let providerTimings: ProviderTimings | undefined;
     let routing: ModelRouting | undefined;
     let providerHttp: ProviderHttpDiagnostics | undefined;
     let schemaValidation: GenerationDiagnostics["schemaValidation"] =
@@ -234,6 +251,7 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
         : {}),
       ...(problem ? { problem } : {}),
       ...(routing ? { routing } : {}),
+      ...(providerTimings ? { providerTimings } : {}),
     });
     const complete = (delivery: "finished" | "disconnected") => {
       if (!observed || terminal) return;
@@ -306,7 +324,9 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
           200,
           editStatusSchema.parse(
             editProvider
-              ? { mode: "mock", provider: "synthetic", sessionToken }
+              ? editProvider.id === "synthetic"
+                ? { mode: "mock", provider: "synthetic", sessionToken }
+                : { mode: "live", ...editProvider.source, sessionToken }
               : { mode: "disabled", provider: null, sessionToken },
           ),
         );
@@ -324,7 +344,9 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
         res.setHeader("Access-Control-Allow-Methods", "POST");
         res.setHeader(
           "Access-Control-Allow-Headers",
-          "Content-Type, X-SiteForge-Session",
+          editing && editProvider?.id === "openrouter-edit"
+            ? "Content-Type, X-SiteForge-Session, X-SiteForge-Edit-Mode"
+            : "Content-Type, X-SiteForge-Session",
         );
         res.statusCode = 204;
         res.end();
@@ -379,7 +401,7 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
         now +
         (editing
           ? editLimits.timeoutMs
-          : (options.totalTimeoutMs ?? GENERATION_LIMITS.totalTimeoutMs));
+          : (options.totalTimeoutMs ?? generationLimits.totalTimeoutMs));
       totalTimer = setTimeout(
         () => controller.abort(timeout()),
         Math.max(1, deadline - Date.now()),
@@ -403,6 +425,15 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
           controller.signal,
         );
         assertActive();
+        if (
+          editProvider!.id === "openrouter-edit" &&
+          req.headers["x-siteforge-edit-mode"] !== "live"
+        )
+          throw new HttpError(
+            403,
+            "CONSENT_REQUIRED",
+            "Explicit live editing consent is required.",
+          );
         const raw = await abortable(() => {
           pendingProviders++;
           return Promise.resolve()
@@ -416,6 +447,12 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
             .finally(() => pendingProviders--);
         }, controller.signal).catch((error) => {
           assertActive();
+          if (error instanceof ProviderError && error.code === "REFUSAL")
+            throw new HttpError(
+              422,
+              "EDIT_REFUSED",
+              "The edit request could not be fulfilled.",
+            );
           throw error;
         });
         assertActive();
@@ -427,7 +464,9 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
           )
             throw Error();
           result = editResultSchema.parse({
-            mode: "mock",
+            ...(editProvider!.id === "synthetic"
+              ? { mode: "mock" }
+              : { mode: "live", source: editProvider!.source }),
             response: JSON.parse(raw),
           });
           assertEditTargets(request.context, result.response);
@@ -476,7 +515,7 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
           deadline,
           provider.attemptPolicy === "router"
             ? deadline
-            : Date.now() + (options.timeoutMs ?? GENERATION_LIMITS.timeoutMs),
+            : Date.now() + (options.timeoutMs ?? generationLimits.timeoutMs),
         );
         const timer = setTimeout(
           () => child.abort(timeout()),
@@ -491,8 +530,15 @@ export function createGenerationServer(options: GenerationServerOptions = {}) {
                 // Describe this attempt, never an earlier transient HTTP failure.
                 providerHttp = undefined;
                 upstreamStatus = undefined;
+                providerTimings = undefined;
                 if (provider.attemptPolicy !== "router") providerAttempts++;
                 return provider.generate(request, child.signal, {
+                  onProviderTimings: (update) => {
+                    if (terminal || bodyDiagnostics || child.signal.aborted)
+                      return;
+                    const parsed = providerTimingsSchema.safeParse(update);
+                    if (parsed.success) providerTimings = parsed.data;
+                  },
                   onProviderStatus: (status) => {
                     if (
                       !terminal &&

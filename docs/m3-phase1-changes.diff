@@ -1,0 +1,2643 @@
+--- baseline/e2e/chat-context.spec.ts
++++ current/e2e/chat-context.spec.ts
+@@ -0,0 +1,261 @@
++import { expect, test, type Locator, type Page } from "@playwright/test";
++import { sampleProject, type Project } from "../src/project-schema/project";
++
++const origin = "http://127.0.0.1:5189";
++const prefix = "siteforge:project:v1:";
++const first: Project = {
++  ...sampleProject,
++  id: "chat-context-first",
++  name: "Chat context first",
++};
++// Keep the same block IDs: a leaked operation would be valid for the wrong project.
++const second: Project = {
++  ...sampleProject,
++  id: "chat-context-second",
++  name: "Chat context second",
++  blocks: sampleProject.blocks.map((block) => ({
++    ...block,
++    text:
++      block.id === "hero-heading" ? "Second project's own heading" : block.text,
++  })),
++};
++const records = {
++  [prefix + first.id]: JSON.stringify(first),
++  [prefix + second.id]: JSON.stringify(second),
++};
++const blockedRequests = new WeakMap<Page, string[]>();
++
++function chat(page: Page) {
++  return page.getByRole("region", {
++    name: "Mock AI chat editing",
++    exact: true,
++  });
++}
++
++async function openChat(page: Page) {
++  if (!(await chat(page).isVisible())) {
++    await page
++      .getByRole("button", { name: "AI chat editing", exact: true })
++      .click();
++  }
++  await expect(chat(page)).toBeVisible();
++  return chat(page);
++}
++
++async function expectStorageUnchanged(page: Page) {
++  expect(
++    await page.evaluate(
++      (keys) =>
++        Object.fromEntries(keys.map((key) => [key, localStorage.getItem(key)])),
++      Object.keys(records),
++    ),
++  ).toEqual(records);
++}
++
++async function expectNoUsableProposal(panel: Locator) {
++  // Clearing controls and retaining disabled controls are both safe invalidations.
++  await expect(
++    panel
++      .getByRole("button", { name: "Preview proposal", exact: true })
++      .and(panel.locator(":enabled")),
++  ).toHaveCount(0);
++  await expect(
++    panel
++      .getByRole("button", { name: "Apply proposal", exact: true })
++      .and(panel.locator(":enabled")),
++  ).toHaveCount(0);
++}
++
++async function propose(page: Page, reviewed: boolean) {
++  const panel = await openChat(page);
++  await panel
++    .getByRole("textbox", { name: "Edit request", exact: true })
++    .fill('update hero-heading text "First project proposal must not leak"');
++  await panel
++    .getByRole("button", { name: "Create mock proposal", exact: true })
++    .click();
++  await expect(
++    panel.getByRole("button", { name: "Preview proposal", exact: true }),
++  ).toBeEnabled();
++  if (reviewed) {
++    await panel
++      .getByRole("button", { name: "Preview proposal", exact: true })
++      .click();
++    await expect(
++      panel.getByRole("button", { name: "Apply proposal", exact: true }),
++    ).toBeEnabled();
++  }
++  await expectStorageUnchanged(page);
++  return panel;
++}
++
++async function openProject(page: Page, project: Project) {
++  await page.getByRole("button", { name: "Projects", exact: true }).click();
++  await page
++    .getByRole("region", { name: "Projects", exact: true })
++    .getByRole("article", { name: `Project ${project.name}`, exact: true })
++    .getByRole("button", { name: "Open", exact: true })
++    .click();
++  await expect(page.locator(".projectbar strong")).toHaveText(project.name);
++  await expect(page.locator(".editor-host .hero-title").first()).toHaveText(
++    project.blocks[0].text,
++  );
++}
++
++test.beforeEach(async ({ page, context }) => {
++  const blocked: string[] = [];
++  blockedRequests.set(page, blocked);
++  await context.route("**/*", (route) => {
++    const url = new URL(route.request().url());
++    if (url.origin !== origin || /^\/api(?:\/|$)/.test(url.pathname)) {
++      blocked.push(url.href);
++      return route.abort();
++    }
++    return route.continue();
++  });
++  await page.addInitScript((seed) => {
++    // Seed once, not on every reload: never hide accidental writes or deletions.
++    const marker = "chat-context-seeded";
++    if (sessionStorage.getItem(marker)) return;
++    for (const [key, value] of Object.entries(seed))
++      localStorage.setItem(key, value);
++    sessionStorage.setItem(marker, "yes");
++  }, records);
++  await page.goto(`/?project=${first.id}`);
++  await expect(page.locator(".projectbar strong")).toHaveText(first.name);
++  await expect(page.locator(".editor-host .hero-title").first()).toHaveText(
++    first.blocks[0].text,
++  );
++  await expect(page.locator(".save-status")).toContainText("All changes saved");
++  await expectStorageUnchanged(page);
++});
++
++test.afterEach(async ({ page }) => {
++  expect(
++    blockedRequests.get(page),
++    "Mock chat must make no API or external requests",
++  ).toEqual([]);
++});
++
++for (const reviewed of [false, true]) {
++  const stage = reviewed ? "reviewed" : "unreviewed";
++
++  test(`${stage} proposal cannot revive after invalid Puck text is restored`, async ({
++    page,
++  }) => {
++    const panel = await propose(page, reviewed);
++    await page
++      .getByRole("button", { name: first.blocks[0].text, exact: true })
++      .click();
++    const text = page.getByRole("textbox", { name: "Text", exact: true });
++    await text.fill("");
++    await expect(
++      page.getByRole("alert").filter({ hasText: "Invalid editor data" }),
++    ).toBeVisible();
++    await expect(
++      page.getByRole("button", { name: "Save project", exact: true }),
++    ).toBeDisabled();
++    await expect(
++      panel.getByRole("button", { name: "Create mock proposal", exact: true }),
++    ).toBeDisabled();
++    await expectNoUsableProposal(panel);
++    await expectStorageUnchanged(page);
++
++    // Returning to the identical canonical snapshot must not resurrect old review consent.
++    await text.fill(first.blocks[0].text);
++    await expect(
++      page.getByRole("alert").filter({ hasText: "Invalid editor data" }),
++    ).toHaveCount(0);
++    await expect(
++      panel.getByRole("button", { name: "Create mock proposal", exact: true }),
++    ).toBeEnabled();
++    await expectNoUsableProposal(panel);
++    await expect(page.locator(".editor-host .hero-title").first()).toHaveText(
++      first.blocks[0].text,
++    );
++    await expect(page.locator(".save-status")).toContainText(
++      "All changes saved",
++    );
++    await expectStorageUnchanged(page);
++
++    // Recovery requires an explicit new proposal and a new review.
++    await panel
++      .getByRole("textbox", { name: "Edit request", exact: true })
++      .fill('update hero-heading text "Fresh request after correction"');
++    await panel
++      .getByRole("button", { name: "Create mock proposal", exact: true })
++      .click();
++    await expect(
++      panel.getByRole("button", { name: "Apply proposal", exact: true }),
++    ).toBeDisabled();
++    await panel
++      .getByRole("button", { name: "Preview proposal", exact: true })
++      .click();
++    await expect(
++      panel.getByRole("button", { name: "Apply proposal", exact: true }),
++    ).toBeEnabled();
++    await expectStorageUnchanged(page);
++  });
++
++  test(`switching projects discards a ${stage} proposal even when block IDs overlap`, async ({
++    page,
++  }) => {
++    await propose(page, reviewed);
++    await openProject(page, second);
++    let panel = await openChat(page);
++    await expect(
++      panel.getByRole("textbox", { name: "Edit request", exact: true }),
++    ).toHaveValue("");
++    await expectNoUsableProposal(panel);
++    await expect(page.locator(".editor-host .hero-title").first()).toHaveText(
++      second.blocks[0].text,
++    );
++    await expect(page.locator(".save-status")).toContainText(
++      "All changes saved",
++    );
++    await expect(
++      page.getByRole("button", { name: "Save project", exact: true }),
++    ).toBeDisabled();
++    await expectStorageUnchanged(page);
++
++    // Switching back must not cache and resurrect the first project's proposal either.
++    await openProject(page, first);
++    panel = await openChat(page);
++    await expect(
++      panel.getByRole("textbox", { name: "Edit request", exact: true }),
++    ).toHaveValue("");
++    await expectNoUsableProposal(panel);
++    await expect(page.locator(".save-status")).toContainText(
++      "All changes saved",
++    );
++    await expectStorageUnchanged(page);
++  });
++
++  test(`workspace Reload cancels a ${stage} proposal without changing saved projects`, async ({
++    page,
++  }) => {
++    await propose(page, reviewed);
++    // Exercise the in-app generation reset, not merely a full browser navigation.
++    await page
++      .getByRole("button", { name: "Reload project", exact: true })
++      .click();
++    await expect(page.locator(".workspace-notice")).toHaveText(
++      "Saved project reloaded.",
++    );
++    const panel = await openChat(page);
++    await expect(
++      panel.getByRole("textbox", { name: "Edit request", exact: true }),
++    ).toHaveValue("");
++    await expectNoUsableProposal(panel);
++    await expect(page.locator(".editor-host .hero-title").first()).toHaveText(
++      first.blocks[0].text,
++    );
++    await expect(page.locator(".save-status")).toContainText(
++      "All changes saved",
++    );
++    await expectStorageUnchanged(page);
++    await openProject(page, second);
++    await expectNoUsableProposal(await openChat(page));
++    await expectStorageUnchanged(page);
++  });
++}
+--- baseline/e2e/chat-editing.spec.ts
++++ current/e2e/chat-editing.spec.ts
+@@ -0,0 +1,214 @@
++import { expect, test, type Page } from "@playwright/test";
++import { sampleProject, projectSchema } from "../src/project-schema/project";
++const key = "siteforge:project:v1:" + sampleProject.id;
++const other = { ...sampleProject, id: "chat-other", name: "Other project" };
++const otherKey = "siteforge:project:v1:" + other.id;
++let apiCalls = 0;
++test.beforeEach(async ({ page, context }) => {
++  apiCalls = 0;
++  await context.route("**/*", (route) => {
++    const url = new URL(route.request().url());
++    if (url.pathname.startsWith("/api/")) {
++      apiCalls++;
++      return route.abort();
++    }
++    return url.origin === "http://127.0.0.1:5189"
++      ? route.continue()
++      : route.abort();
++  });
++  await page.addInitScript(
++    ({ key, project, otherKey, other }) => {
++      if (!localStorage.getItem(key))
++        localStorage.setItem(key, JSON.stringify(project));
++      if (!localStorage.getItem(otherKey))
++        localStorage.setItem(otherKey, JSON.stringify(other));
++    },
++    { key, project: sampleProject, otherKey, other },
++  );
++  await page.goto("/");
++  await expect(page.locator(".editor-host .hero-title").first()).toHaveText(
++    sampleProject.blocks[0].text,
++  );
++  await page
++    .getByRole("button", { name: "AI chat editing", exact: true })
++    .click();
++});
++test.afterEach(() => expect(apiCalls).toBe(0));
++function chat(page: Page) {
++  return page.getByRole("region", {
++    name: "Mock AI chat editing",
++    exact: true,
++  });
++}
++async function propose(page: Page, request: string) {
++  await chat(page).getByRole("textbox", { name: "Edit request" }).fill(request);
++  await chat(page)
++    .getByRole("button", { name: "Create mock proposal", exact: true })
++    .click();
++}
++async function stored(page: Page) {
++  return page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), key);
++}
++async function apply(page: Page) {
++  await chat(page)
++    .getByRole("button", { name: "Preview proposal", exact: true })
++    .click();
++  await chat(page)
++    .getByRole("button", { name: "Apply proposal", exact: true })
++    .click();
++}
++test("update: proposal/preview/reject are read-only, Apply drafts, explicit Save/reload preserves IDs and isolation", async ({
++  page,
++}) => {
++  await propose(page, 'update hero-heading text "Locally reviewed headline"');
++  await expect(
++    chat(page).getByRole("button", { name: "Apply proposal", exact: true }),
++  ).toBeDisabled();
++  await chat(page)
++    .getByRole("button", { name: "Preview proposal", exact: true })
++    .click();
++  expect(await stored(page)).toEqual(sampleProject);
++  await expect(page.locator(".editor-host .hero-title").first()).toHaveText(
++    sampleProject.blocks[0].text,
++  );
++  await chat(page)
++    .getByRole("button", { name: "Reject proposal", exact: true })
++    .click();
++  expect(await stored(page)).toEqual(sampleProject);
++  await expect(page.locator(".save-status")).toContainText("All changes saved");
++  await propose(page, 'update hero-heading text "Locally reviewed headline"');
++  await apply(page);
++  await expect(page.locator(".editor-host .hero-title").first()).toHaveText(
++    "Locally reviewed headline",
++  );
++  await expect(page.locator(".save-status")).toContainText("Unsaved changes");
++  expect(await stored(page)).toEqual(sampleProject);
++  await page.getByRole("button", { name: "Save project", exact: true }).click();
++  const saved = projectSchema.parse(await stored(page));
++  expect(saved.revision).toBe(1);
++  expect(saved.blocks.map((b) => b.id)).toEqual(
++    sampleProject.blocks.map((b) => b.id),
++  );
++  expect(saved.blocks[0].text).toBe("Locally reviewed headline");
++  expect(
++    await page.evaluate((k) => JSON.parse(localStorage.getItem(k)!), otherKey),
++  ).toEqual(other);
++  await page.reload();
++  await expect(page.locator(".editor-host .hero-title").first()).toHaveText(
++    "Locally reviewed headline",
++  );
++});
++test("add, reorder and remove through separate proposals preserve existing IDs and require Save", async ({
++  page,
++}) => {
++  await propose(
++    page,
++    'add paragraph after hero-heading {"text":"An explicitly requested paragraph"}',
++  );
++  await apply(page);
++  expect(await stored(page)).toEqual(sampleProject);
++  await page.getByRole("button", { name: "Save project", exact: true }).click();
++  const added = projectSchema.parse(await stored(page));
++  expect(added.blocks).toHaveLength(3);
++  const newId = added.blocks[1].id;
++  expect(newId).not.toBe("hero-heading");
++  await propose(page, `reorder hero-copy,${newId},hero-heading`);
++  await apply(page);
++  await page.getByRole("button", { name: "Save project", exact: true }).click();
++  expect((await stored(page)).blocks.map((b: { id: string }) => b.id)).toEqual([
++    "hero-copy",
++    newId,
++    "hero-heading",
++  ]);
++  await propose(page, `remove ${newId}`);
++  await apply(page);
++  expect((await stored(page)).blocks).toHaveLength(3);
++  await page.getByRole("button", { name: "Save project", exact: true }).click();
++  const removed = projectSchema.parse(await stored(page));
++  expect(removed.revision).toBe(3);
++  expect(removed.blocks.map((b) => b.id)).toEqual([
++    "hero-copy",
++    "hero-heading",
++  ]);
++});
++test("manual Puck edits invalidate a reviewed proposal without overwriting the draft", async ({
++  page,
++}) => {
++  await propose(page, 'update hero-heading text "Proposal text"');
++  await chat(page)
++    .getByRole("button", { name: "Preview proposal", exact: true })
++    .click();
++  await page
++    .getByRole("button", { name: sampleProject.blocks[0].text, exact: true })
++    .click();
++  await page
++    .getByRole("textbox", { name: "Text", exact: true })
++    .fill("Manual draft wins");
++  await expect(
++    chat(page).getByRole("button", { name: "Apply proposal", exact: true }),
++  ).toBeDisabled();
++  await expect(page.locator(".editor-host .hero-title").first()).toHaveText(
++    "Manual draft wins",
++  );
++  expect(await stored(page)).toEqual(sampleProject);
++});
++test("a concurrent stored revision prevents Apply and preserves both documents", async ({
++  page,
++}) => {
++  await propose(page, 'update hero-heading text "Stale proposal"');
++  await chat(page)
++    .getByRole("button", { name: "Preview proposal", exact: true })
++    .click();
++  await page.evaluate((k) => {
++    const p = JSON.parse(localStorage.getItem(k)!);
++    p.revision++;
++    p.blocks[0].text = "Other tab saved";
++    localStorage.setItem(k, JSON.stringify(p));
++  }, key);
++  await chat(page)
++    .getByRole("button", { name: "Apply proposal", exact: true })
++    .click();
++  await expect(
++    page.getByRole("alert").filter({ hasText: "Revision conflict" }).first(),
++  ).toBeVisible();
++  await expect(page.locator(".editor-host .hero-title").first()).toHaveText(
++    sampleProject.blocks[0].text,
++  );
++  expect((await stored(page)).blocks[0].text).toBe("Other tab saved");
++});
++test("Puck remains editable after an approved proposal remounts the editor", async ({
++  page,
++}) => {
++  await propose(page, 'update hero-heading text "Approved draft"');
++  await apply(page);
++  await expect(page.locator(".editor-host .hero-title").first()).toHaveText(
++    "Approved draft",
++  );
++  await page
++    .getByRole("button", { name: "Approved draft", exact: true })
++    .click();
++  await page
++    .getByRole("textbox", { name: "Text", exact: true })
++    .fill("Manually refined after Apply");
++  expect(await stored(page)).toEqual(sampleProject);
++  await page.getByRole("button", { name: "Save project", exact: true }).click();
++  expect((await stored(page)).blocks[0]).toEqual({
++    ...sampleProject.blocks[0],
++    text: "Manually refined after Apply",
++  });
++  await page.reload();
++  await expect(page.locator(".editor-host .hero-title").first()).toHaveText(
++    "Manually refined after Apply",
++  );
++});
++
++test("invalid command and invalid canonical fields fail without writes", async ({
++  page,
++}) => {
++  await propose(page, 'update hero-heading text ""');
++  await expect(chat(page).getByRole("alert")).toBeVisible();
++  expect(await stored(page)).toEqual(sampleProject);
++  await propose(page, "remove absent-block");
++  await expect(chat(page).getByRole("alert")).toBeVisible();
++  expect(await stored(page)).toEqual(sampleProject);
++});
+--- baseline/README.md
++++ current/README.md
+@@ -1,6 +1,8 @@
+ # SiteForge AI
+ 
+-M2C — advanced website generation, retaining the M0–M2B engine. React, TypeScript, Vite, Tailwind, Zod and Puck. Functionality first: no major UI redesign. One earlier M2B live smoke succeeded; M2C changes are verified with synthetic/mock transports only and do not authorize live access.
++M3 Phase 1 — mock AI chat editing, retaining the M0–M2C engine. React, TypeScript, Vite, Tailwind, Zod and Puck. Functionality first: no major UI redesign. The prior M2C OpenRouter live acceptance is historical; this phase is local mock-only and does not authorize any live provider requests.
++
++See [M3 mock editing workflow and safety](docs/m3-phase1.md). Open **AI chat editing** for Chat → Proposal → Preview → Apply/Reject → explicit **Save project**. The deterministic command parser is labeled mock, not real AI. No chat backend or API key is needed.
+ 
+ See [M2C capabilities, verification and limits](docs/m2c-verification.md), [implementation plan](docs/m2c-plan.md), and [machine-readable evidence](docs/m2c-verification.json).
+ 
+@@ -117,10 +119,10 @@
+ 
+ M0/M1 documents remain valid and load without migration or automatic writes. M2A adds optional description and template provenance to Schema v1; old documents do not acquire these fields automatically. Explicit Save (including Save candidate as new project), Rename, Create, Import and confirmed Delete are the only project mutation flows. Source snapshots are preserved in `.milestones/m0-before-m1/` and `.milestones/m1-before-m2a/`; neither is a backup of browser data. Older app versions may reject newer fields/blocks—retain JSON backups before downgrade.
+ 
+-Each project currently contains one flat page. Rich text, nested layout, uploaded media, payments, authentication, production database and cloud deployment remain out of scope. `ai/provider.ts` remains the separate, unimplemented AI Chat Editing contract; `ai/website-generation.ts` is the generation contract. M2B adds optional AI/mock provenance without migrating legacy documents. The pre-M2B source checkpoint is `.milestones/m2a-before-m2b-phase1/`, not a browser-data backup.
++Each project currently contains one flat page. Rich text, nested layout, uploaded media, payments, authentication, production database and cloud deployment remain out of scope. `ai/provider.ts` retains the legacy unimplemented provider contract; M3 Phase 1 uses the separate `ai/edit-proposal.ts` and `ai/mock-chat-editor.ts` local mock engine. `ai/website-generation.ts` remains the generation contract. M2B adds optional AI/mock provenance without migrating legacy documents. The pre-M2B source checkpoint is `.milestones/m2a-before-m2b-phase1/`, not a browser-data backup.
+ 
+ localStorage can be cleared by the browser and has quota/privacy limitations. Revision checks detect stale saves but are **not atomic cross-tab transactions**. No auto-merge or durable unsaved-draft recovery is promised.
+ 
+ All dependencies and npm cache are project-local. There are no paid services, remote fonts or required remote image services. Never place secrets in frontend variables, including `VITE_*`.
+ 
+-See [architecture](docs/architecture.md), [M0 verification](docs/m0-verification.md), [M1 verification](docs/m1-verification.md), [M2A verification](docs/m2a-verification.md), and [M2B Phase 1 verification](docs/m2b-phase1-verification.md). Stop before live Gemini smoke testing. AI Chat Editing and M3 require separate approval.
++See [architecture](docs/architecture.md), [M0 verification](docs/m0-verification.md), [M1 verification](docs/m1-verification.md), [M2A verification](docs/m2a-verification.md), and [M2B Phase 1 verification](docs/m2b-phase1-verification.md). M3 Phase 1 is limited to mock chat editing. Stop before real AI chat integration, new live smoke testing or M4.
+--- baseline/src/ai/edit-proposal.test.ts
++++ current/src/ai/edit-proposal.test.ts
+@@ -0,0 +1,731 @@
++import { describe, expect, it } from "vitest";
++import { sampleProject, type Project } from "../project-schema/project";
++import {
++  createEditProposal,
++  editProposalSchema,
++  previewEditProposal,
++  projectSnapshot,
++} from "./edit-proposal";
++
++const base = (): Project => structuredClone(sampleProject);
++
++describe("edit proposal", () => {
++  it.each(['update photo src "/new.svg"', "update photo src '/new.svg'"])(
++    "accepts the exact quoted root-relative image source: %s",
++    (request) => {
++      const project: Project = {
++        ...base(),
++        blocks: [
++          {
++            id: "photo",
++            type: "image",
++            text: "",
++            src: "/old.svg",
++            alt: "Photo",
++          },
++        ],
++      };
++      const proposal = createEditProposal(project, request, [
++        { op: "update", blockId: "photo", changes: { src: "/new.svg" } },
++      ]);
++      expect(previewEditProposal(project, proposal).blocks[0]).toMatchObject({
++        id: "photo",
++        src: "/new.svg",
++      });
++      expect(() =>
++        createEditProposal(project, request, [
++          { op: "update", blockId: "photo", changes: { src: "/new" } },
++        ]),
++      ).toThrow(/URL|source/i);
++    },
++  );
++  it("excludes URLs embedded in names, descriptions and visible text from numeric evidence", () => {
++    const project: Project = {
++      ...base(),
++      name: "https://example.com/777",
++      description: "Visit https://example.com/888",
++      blocks: [
++        {
++          id: "heading",
++          type: "heading",
++          text: "Visit https://example.com/999",
++        },
++      ],
++    };
++    for (const number of ["777", "888", "999"]) {
++      expect(() =>
++        createEditProposal(project, "Rewrite", [
++          {
++            op: "update",
++            blockId: "heading",
++            changes: { text: `${number} clients` },
++          },
++        ]),
++      ).toThrow(/UNSUPPORTED_BUSINESS_FACT/);
++    }
++  });
++  it("detaches nested update payloads from their caller", () => {
++    const project: Project = {
++      ...base(),
++      blocks: [
++        {
++          id: "features",
++          type: "features",
++          text: "Services",
++          layout: "grid",
++          items: [{ title: "Original", description: "" }],
++        },
++      ],
++    };
++    const items = [{ title: "Fresh", description: "" }];
++    const proposal = createEditProposal(project, "Fresh", [
++      { op: "update", blockId: "features", changes: { items } },
++    ]);
++    items[0].title = "Caller mutation";
++    expect(previewEditProposal(project, proposal).blocks[0]).toMatchObject({
++      items: [{ title: "Fresh" }],
++    });
++  });
++  it("bounds strict proposal payloads and revalidates untrusted preview input", () => {
++    const project = base();
++    const proposal = createEditProposal(project, "Welcome", [
++      { op: "update", blockId: "hero-heading", changes: { text: "Welcome" } },
++    ]);
++    for (const invalid of [
++      { ...proposal, extra: true },
++      { ...proposal, mode: "live" },
++      { ...proposal, version: 2 },
++      { ...proposal, operations: [] },
++      { ...proposal, operations: Array(101).fill(proposal.operations[0]) },
++      { ...proposal, request: "x".repeat(10001) },
++      { ...proposal, summary: "" },
++      { ...proposal, operations: [{ ...proposal.operations[0], extra: true }] },
++      {
++        ...proposal,
++        operations: [
++          {
++            op: "add",
++            afterId: null,
++            block: {
++              id: "fresh",
++              type: "heading",
++              text: "Welcome",
++              extra: true,
++            },
++          },
++        ],
++      },
++      {
++        ...proposal,
++        operations: [
++          {
++            op: "update",
++            blockId: "hero-heading",
++            changes: { unknown: "x".repeat(1_000_001) },
++          },
++        ],
++      },
++      { ...proposal, baseSnapshot: "x".repeat(8_000_001) },
++    ]) {
++      expect(editProposalSchema.safeParse(invalid).success).toBe(false);
++      expect(() => previewEditProposal(project, invalid)).toThrow();
++    }
++    expect(() =>
++      previewEditProposal(project, {
++        ...proposal,
++        operations: [
++          { op: "update", blockId: "hero-heading", changes: { id: "new" } },
++        ],
++      }),
++    ).toThrow();
++  });
++  it.each<Project["blocks"][number]>([
++    { id: "target", type: "heading", text: "Welcome" },
++    { id: "target", type: "paragraph", text: "Welcome" },
++    { id: "target", type: "button", text: "Open", href: "#" },
++    { id: "target", type: "image", text: "", src: "", alt: "Photo" },
++    {
++      id: "target",
++      type: "hero",
++      text: "Welcome",
++      subtitle: "",
++      ctaText: "",
++      ctaHref: "",
++    },
++  ])("rejects newly introduced anchors to non-rendered $type IDs", (target) => {
++    const project: Project = {
++      ...base(),
++      blocks: [target, { id: "link", type: "button", text: "Open", href: "#" }],
++    };
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        { op: "update", blockId: "link", changes: { href: "#target" } },
++      ]),
++    ).toThrow(/anchor/i);
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        {
++          op: "add",
++          afterId: null,
++          block: {
++            id: "new-link",
++            type: "button",
++            text: "Open",
++            href: "#target",
++          },
++        },
++      ]),
++    ).toThrow(/anchor/i);
++  });
++  it.each<Project["blocks"][number]>([
++    { id: "target", type: "section", text: "Welcome", body: "", tone: "light" },
++    {
++      id: "target",
++      type: "features",
++      text: "Services",
++      layout: "grid",
++      items: [{ title: "Design", description: "" }],
++    },
++    {
++      id: "target",
++      type: "contact",
++      text: "Contact",
++      body: "",
++      email: "",
++      phone: "",
++      address: "",
++    },
++  ])("accepts newly introduced anchors to rendered $type IDs", (target) => {
++    const project: Project = {
++      ...base(),
++      blocks: [{ id: "link", type: "button", text: "Open", href: "#" }],
++    };
++    const proposal = createEditProposal(project, "Rewrite", [
++      { op: "update", blockId: "link", changes: { href: "#target" } },
++      { op: "add", afterId: null, block: target },
++    ]);
++    expect(previewEditProposal(project, proposal).blocks).toEqual([
++      target,
++      { id: "link", type: "button", text: "Open", href: "#target" },
++    ]);
++  });
++  it("retains untouched legacy anchors to IDs the renderer does not emit", () => {
++    const project: Project = {
++      ...base(),
++      blocks: [
++        { id: "target", type: "heading", text: "Welcome" },
++        { id: "link", type: "button", text: "Open", href: "#target" },
++      ],
++    };
++    const proposal = createEditProposal(project, "Rewrite", [
++      { op: "update", blockId: "target", changes: { text: "Fresh" } },
++    ]);
++    expect(previewEditProposal(project, proposal).blocks[1]).toEqual(
++      project.blocks[1],
++    );
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        { op: "remove", blockId: "target" },
++      ]),
++    ).not.toThrow();
++  });
++  it("checks final anchors without rejecting untouched legacy dangling links", () => {
++    const project: Project = {
++      ...base(),
++      blocks: [
++        {
++          id: "target",
++          type: "section",
++          text: "Welcome",
++          body: "",
++          tone: "light",
++        },
++        { id: "link", type: "button", text: "Open", href: "#target" },
++        {
++          id: "legacy",
++          type: "hero",
++          text: "Legacy",
++          subtitle: "",
++          ctaText: "Open",
++          ctaHref: "#missing",
++        },
++      ],
++    };
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        { op: "update", blockId: "target", changes: { text: "Fresh" } },
++      ]),
++    ).not.toThrow();
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        { op: "remove", blockId: "target" },
++      ]),
++    ).toThrow(/anchor/i);
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        { op: "update", blockId: "link", changes: { href: "#missing" } },
++      ]),
++    ).toThrow(/anchor/i);
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        { op: "update", blockId: "legacy", changes: { ctaHref: "#other" } },
++      ]),
++    ).toThrow(/anchor/i);
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        {
++          op: "add",
++          afterId: null,
++          block: { id: "new", type: "button", text: "Open", href: "#missing" },
++        },
++      ]),
++    ).toThrow(/anchor/i);
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        { op: "remove", blockId: "target" },
++        { op: "remove", blockId: "link" },
++      ]),
++    ).not.toThrow();
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        { op: "update", blockId: "link", changes: { href: "#new" } },
++        {
++          op: "add",
++          afterId: null,
++          block: {
++            id: "new",
++            type: "section",
++            text: "Welcome",
++            body: "",
++            tone: "light",
++          },
++        },
++      ]),
++    ).not.toThrow();
++  });
++  it("requires exact grounded newly changed external URLs and image sources", () => {
++    const project: Project = {
++      ...base(),
++      blocks: [
++        {
++          id: "link",
++          type: "button",
++          text: "Open",
++          href: "https://old.example/path",
++        },
++        {
++          id: "image",
++          type: "image",
++          text: "",
++          src: "https://old.example/photo.png",
++          alt: "Photo",
++        },
++      ],
++    };
++    for (const operation of [
++      {
++        op: "update",
++        blockId: "link",
++        changes: { href: "https://invented.example" },
++      },
++      {
++        op: "update",
++        blockId: "image",
++        changes: { src: "https://invented.example/photo.png" },
++      },
++      {
++        op: "add",
++        afterId: null,
++        block: {
++          id: "new",
++          type: "image",
++          text: "",
++          src: "https://invented.example/photo.png",
++          alt: "",
++        },
++      },
++    ])
++      expect(() => createEditProposal(project, "Rewrite", [operation])).toThrow(
++        /URL|source/i,
++      );
++    expect(() =>
++      createEditProposal(project, "Use https://new.example/path", [
++        {
++          op: "update",
++          blockId: "link",
++          changes: { href: "https://new.example/path" },
++        },
++      ]),
++    ).not.toThrow();
++    expect(() =>
++      createEditProposal(project, "Use https://new.example/pathology", [
++        {
++          op: "update",
++          blockId: "link",
++          changes: { href: "https://new.example/path" },
++        },
++      ]),
++    ).toThrow(/URL|source/i);
++    expect(() =>
++      createEditProposal(project, "Copy", [
++        {
++          op: "update",
++          blockId: "link",
++          changes: { href: "https://old.example/photo.png" },
++        },
++      ]),
++    ).not.toThrow();
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        { op: "update", blockId: "image", changes: { alt: "Fresh photo" } },
++      ]),
++    ).not.toThrow();
++  });
++  it.each([
++    'update 2020 text "Since 2020"',
++    'ubah 2020 text "Since 2020"',
++    'add paragraph after 2020 {"text":"Since 2020"}',
++    'update heading items [{"title":"Since 2020","description":""}]',
++  ])(
++    "preserves JSON literal numeric evidence matching a block ID: %s",
++    (request) => {
++      const project: Project = {
++        ...base(),
++        blocks: [{ id: "2020", type: "heading", text: "Welcome" }],
++      };
++      const proposal = createEditProposal(project, request, [
++        { op: "update", blockId: "2020", changes: { text: "Since 2020" } },
++      ]);
++      expect(previewEditProposal(project, proposal).blocks[0].text).toBe(
++        "Since 2020",
++      );
++    },
++  );
++  it.each([
++    'update 2020 text "Welcome"',
++    'ubah 2020 text "Welcome"',
++    'add paragraph after 2020 {"text":"Welcome"}',
++    "remove 2020",
++    "reorder heading,2020",
++  ])(
++    "does not treat command target IDs as numeric fact evidence: %s",
++    (request) => {
++      const project: Project = {
++        ...base(),
++        blocks: [{ id: "2020", type: "heading", text: "Welcome" }],
++      };
++      expect(() =>
++        createEditProposal(project, request, [
++          { op: "update", blockId: "2020", changes: { text: "Since 2020" } },
++        ]),
++      ).toThrow(/UNSUPPORTED_BUSINESS_FACT/);
++    },
++  );
++  it("does not strip a block ID substring from an explicitly supplied fact", () => {
++    const project: Project = {
++      ...base(),
++      blocks: [{ id: "20", type: "heading", text: "Welcome" }],
++    };
++    const proposal = createEditProposal(
++      project,
++      'update 20 text "Since 2020"',
++      [{ op: "update", blockId: "20", changes: { text: "Since 2020" } }],
++    );
++    expect(previewEditProposal(project, proposal).blocks[0].text).toBe(
++      "Since 2020",
++    );
++  });
++  it("does not launder numeric facts through IDs or URLs or earlier edits", () => {
++    const project: Project = {
++      ...base(),
++      id: "project-777",
++      blocks: [
++        { id: "section-999", type: "heading", text: "Welcome" },
++        {
++          id: "link",
++          type: "button",
++          text: "Open",
++          href: "https://example.com/888",
++        },
++      ],
++    };
++    for (const text of ["777 clients", "888 clients", "999 clients"]) {
++      expect(() =>
++        createEditProposal(project, "Rewrite", [
++          { op: "update", blockId: "section-999", changes: { text } },
++        ]),
++      ).toThrow(/UNSUPPORTED_BUSINESS_FACT/);
++    }
++    expect(() =>
++      createEditProposal(
++        project,
++        "update section-999 text https://example.com/888",
++        [
++          {
++            op: "update",
++            blockId: "section-999",
++            changes: { text: "888 clients" },
++          },
++        ],
++      ),
++    ).toThrow(/UNSUPPORTED_BUSINESS_FACT/);
++    expect(() =>
++      createEditProposal(project, "update section-999 text", [
++        {
++          op: "update",
++          blockId: "section-999",
++          changes: { text: "999 clients" },
++        },
++      ]),
++    ).toThrow(/UNSUPPORTED_BUSINESS_FACT/);
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        {
++          op: "update",
++          blockId: "section-999",
++          changes: { text: "123 clients" },
++        },
++        { op: "update", blockId: "link", changes: { text: "123" } },
++      ]),
++    ).toThrow(/UNSUPPORTED_BUSINESS_FACT/);
++  });
++  it("grounds numeric/email/contact changes in visible original content and request", () => {
++    const project: Project = {
++      ...base(),
++      description: "Since 2020",
++      blocks: [
++        { id: "heading", type: "heading", text: "Save 25%" },
++        {
++          id: "features",
++          type: "features",
++          text: "Services",
++          layout: "grid",
++          items: [{ title: "Team of 8", description: "Serving 12 cities" }],
++        },
++        {
++          id: "contact",
++          type: "contact",
++          text: "Contact",
++          body: "",
++          email: "hello@example.com",
++          phone: "+60123456789",
++          address: "Maple Lane",
++        },
++      ],
++    };
++    for (const text of ["2020", "25%", "8", "12", "hello@example.com"]) {
++      expect(() =>
++        createEditProposal(project, "Rewrite", [
++          { op: "update", blockId: "heading", changes: { text } },
++        ]),
++      ).not.toThrow();
++    }
++    expect(() =>
++      createEditProposal(project, "Our price is USD 10", [
++        { op: "update", blockId: "heading", changes: { text: "USD 10" } },
++      ]),
++    ).not.toThrow();
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        {
++          op: "add",
++          afterId: null,
++          block: {
++            id: "copy",
++            type: "contact",
++            text: "Contact",
++            body: "",
++            email: "hello@example.com",
++            phone: "+60123456789",
++            address: "Maple Lane",
++          },
++        },
++      ]),
++    ).not.toThrow();
++    for (const changes of [
++      { text: "999 clients" },
++      { text: "fake@example.com" },
++    ]) {
++      expect(() =>
++        createEditProposal(project, "Rewrite", [
++          { op: "update", blockId: "heading", changes },
++        ]),
++      ).toThrow(/UNSUPPORTED_BUSINESS_FACT/);
++    }
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        {
++          op: "update",
++          blockId: "contact",
++          changes: { address: "Invented Avenue" },
++        },
++      ]),
++    ).toThrow(/UNSUPPORTED_BUSINESS_FACT/);
++    expect(() =>
++      createEditProposal(project, "Rewrite", [
++        {
++          op: "update",
++          blockId: "features",
++          changes: { items: [{ title: "999 clients", description: "" }] },
++        },
++      ]),
++    ).toThrow(/UNSUPPORTED_BUSINESS_FACT/);
++  });
++  it.each([
++    [
++      { op: "remove", blockId: "hero-heading" },
++      {
++        op: "add",
++        block: { id: "hero-heading", type: "heading", text: "Welcome" },
++        afterId: null,
++      },
++    ],
++    [
++      {
++        op: "add",
++        block: { id: "fresh", type: "heading", text: "Welcome" },
++        afterId: null,
++      },
++      { op: "remove", blockId: "fresh" },
++      {
++        op: "add",
++        block: { id: "fresh", type: "heading", text: "Welcome" },
++        afterId: null,
++      },
++    ],
++    [
++      {
++        op: "add",
++        block: { id: "hero-heading", type: "heading", text: "Welcome" },
++        afterId: null,
++      },
++      { op: "remove", blockId: "hero-heading" },
++    ],
++    [{ op: "remove", blockId: "missing" }],
++    [
++      {
++        op: "add",
++        block: { id: "fresh", type: "heading", text: "Welcome" },
++        afterId: "missing",
++      },
++    ],
++    [{ op: "reorder", blockIds: ["hero-heading"] }],
++    [{ op: "reorder", blockIds: ["hero-heading", "hero-heading"] }],
++    [{ op: "reorder", blockIds: ["hero-heading", "missing"] }],
++  ])(
++    "rejects reused IDs, unknown targets and invalid permutations: %j",
++    (...operations) => {
++      expect(() => createEditProposal(base(), "Welcome", operations)).toThrow();
++    },
++  );
++  it("applies add/remove/reorder sequentially in one immutable atomic preview", () => {
++    const project = base();
++    const before = structuredClone(project);
++    const proposal = createEditProposal(project, "Welcome", [
++      {
++        op: "add",
++        block: { id: "start", type: "paragraph", text: "Welcome" },
++        afterId: null,
++      },
++      {
++        op: "add",
++        block: { id: "end", type: "heading", text: "Welcome" },
++        afterId: "hero-copy",
++      },
++      { op: "remove", blockId: "hero-heading" },
++      { op: "reorder", blockIds: ["end", "hero-copy", "start"] },
++    ]);
++    expect(
++      previewEditProposal(project, proposal).blocks.map((block) => block.id),
++    ).toEqual(["end", "hero-copy", "start"]);
++    expect(project).toEqual(before);
++    const onlyAdd = createEditProposal(project, "Welcome", [
++      {
++        op: "add",
++        block: { id: "start", type: "paragraph", text: "Welcome" },
++        afterId: null,
++      },
++    ]);
++    expect(previewEditProposal(project, onlyAdd).blocks[0].id).toBe("start");
++  });
++  it.each([
++    { blockId: "missing", changes: { text: "Welcome" } },
++    { blockId: "hero-heading", changes: { id: "replacement" } },
++    { blockId: "hero-heading", changes: { type: "paragraph" } },
++    { blockId: "hero-heading", changes: { unknown: "value" } },
++    { blockId: "hero-heading", changes: {} },
++    { blockId: "hero-heading", changes: { text: "" } },
++    { blockId: "hero-heading", changes: { text: 42 } },
++  ])("rejects invalid updates atomically: %j", (operation) => {
++    const project = base();
++    const before = structuredClone(project);
++    expect(() =>
++      createEditProposal(project, "Welcome", [
++        { op: "update", blockId: "hero-copy", changes: { text: "Welcome" } },
++        { op: "update", ...operation },
++      ]),
++    ).toThrow();
++    expect(project).toEqual(before);
++  });
++  it("compares canonical baselines including same-revision unsaved edits", () => {
++    const project = base();
++    const proposal = createEditProposal(project, "Welcome", [
++      { op: "update", blockId: "hero-heading", changes: { text: "Welcome" } },
++    ]);
++    const reorderedKeys = {
++      blocks: project.blocks.map((block) => ({
++        text: block.text,
++        type: block.type,
++        id: block.id,
++      })),
++      revision: project.revision,
++      name: project.name,
++      id: project.id,
++      schemaVersion: project.schemaVersion,
++    } as Project;
++    expect(projectSnapshot(reorderedKeys)).toBe(projectSnapshot(project));
++    expect(previewEditProposal(reorderedKeys, proposal).blocks[0].text).toBe(
++      "Welcome",
++    );
++    for (const changed of [
++      { ...project, name: "Unsaved" },
++      { ...project, revision: 1 },
++      { ...project, id: "other" },
++      { ...project, blocks: [{ ...project.blocks[0], text: "Unsaved" }] },
++    ]) {
++      expect(() => previewEditProposal(changed, proposal)).toThrow(
++        /baseline|stale/i,
++      );
++    }
++  });
++  it("previews an update immutably without changing revision or metadata", () => {
++    const project = base();
++    const before = structuredClone(project);
++    const operations = [
++      { op: "update", blockId: "hero-heading", changes: { text: "Welcome" } },
++    ];
++    const proposal = createEditProposal(project, "Say welcome", operations);
++    expect(proposal).toMatchObject({
++      version: 1,
++      mode: "mock",
++      projectId: project.id,
++      baseRevision: 0,
++      request: "Say welcome",
++      baseSnapshot: projectSnapshot(project),
++    });
++    expect(proposal.id).toBeTruthy();
++    expect(proposal.summary.trim()).not.toBe("");
++    const preview = previewEditProposal(project, proposal);
++    expect(preview.blocks[0]).toEqual({
++      ...project.blocks[0],
++      text: "Welcome",
++    });
++    expect({ ...preview, blocks: [] }).toEqual({ ...project, blocks: [] });
++    expect(project).toEqual(before);
++    expect(preview.blocks).not.toBe(project.blocks);
++    operations[0].changes.text = "Mutated";
++    expect(previewEditProposal(project, proposal).blocks[0].text).toBe(
++      "Welcome",
++    );
++  });
++});
+--- baseline/src/ai/edit-proposal.ts
++++ current/src/ai/edit-proposal.ts
+@@ -0,0 +1,289 @@
++import { z } from "zod";
++import {
++  blockSchema,
++  projectSchema,
++  type Project,
++} from "../project-schema/project";
++import { assertGroundedContent } from "./generation-grounding";
++
++const updateSchema = z.strictObject({
++  op: z.literal("update"),
++  blockId: z.string().min(1).max(200),
++  changes: z.record(z.string(), z.unknown()).refine((changes) => {
++    const keys = Object.keys(changes);
++    const editable = [
++      ...visibleFields,
++      "href",
++      "ctaHref",
++      "src",
++      "tone",
++      "layout",
++      "items",
++    ];
++    try {
++      return (
++        keys.length > 0 &&
++        keys.length <= 10 &&
++        keys.every((key) => editable.includes(key)) &&
++        JSON.stringify(changes).length <= 100_000
++      );
++    } catch {
++      return false;
++    }
++  }, "Update changes must contain editable fields only; id and type are immutable."),
++});
++const operationSchema = z.discriminatedUnion("op", [
++  updateSchema,
++  z.strictObject({
++    op: z.literal("add"),
++    block: blockSchema,
++    afterId: z.string().min(1).nullable(),
++  }),
++  z.strictObject({ op: z.literal("remove"), blockId: z.string().min(1) }),
++  z.strictObject({
++    op: z.literal("reorder"),
++    blockIds: z.array(z.string().min(1)).max(200),
++  }),
++]);
++export const editProposalSchema = z.strictObject({
++  id: z.string().uuid(),
++  version: z.literal(1),
++  mode: z.literal("mock"),
++  projectId: z.string().min(1),
++  baseRevision: z.number().int().nonnegative(),
++  baseSnapshot: z.string().min(1).max(8_000_000),
++  request: z.string().trim().min(1).max(10000),
++  summary: z.string().trim().min(1).max(2000),
++  operations: z.array(operationSchema).min(1).max(100),
++});
++export type EditProposal = z.infer<typeof editProposalSchema>;
++function canonical(value: unknown): unknown {
++  if (Array.isArray(value)) return value.map(canonical);
++  if (value && typeof value === "object") {
++    return Object.fromEntries(
++      Object.entries(value)
++        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
++        .map(([key, item]) => [key, canonical(item)]),
++    );
++  }
++  return value;
++}
++/** Canonical JSON: sorted object keys at every depth, array order preserved. */
++export function projectSnapshot(project: Project): string {
++  return JSON.stringify(canonical(projectSchema.parse(project)));
++}
++const visibleFields = [
++  "text",
++  "subtitle",
++  "ctaText",
++  "body",
++  "alt",
++  "email",
++  "phone",
++  "address",
++];
++function visibleContent(project: Project): string {
++  return project.blocks
++    .flatMap((block) => {
++      const record = block as Record<string, unknown>;
++      const values = visibleFields
++        .map((key) => record[key])
++        .filter((value): value is string => typeof value === "string");
++      if (block.type === "features")
++        values.push(
++          ...block.items.flatMap((item) => [item.title, item.description]),
++        );
++      return values;
++    })
++    .join("\n");
++}
++function withoutUrls(source: string): string {
++  return source.replace(/https?:\/\/[^\s"<>]+/gi, " ");
++}
++function factContent(value: unknown): unknown {
++  if (typeof value === "string") return withoutUrls(value);
++  if (Array.isArray(value)) return value.map(factContent);
++  if (value && typeof value === "object")
++    return Object.fromEntries(
++      Object.entries(value).map(([key, item]) => [key, factContent(item)]),
++    );
++  return value;
++}
++function groundingRequest(request: string): string {
++  // Remove command structure, never matching IDs inside the supplied JSON value.
++  return request
++    .split(/\r?\n/)
++    .map((line) => {
++      const source = line.trim();
++      const update = /^(?:update|ubah)\s+\S+\s+\S+(?:\s+(.+))?$/.exec(source);
++      const add = /^add\s+\S+\s+after\s+\S+(?:\s+(.+))?$/.exec(source);
++      if (update || add) return withoutUrls((update ?? add)![1] ?? "");
++      if (/^(?:remove|reorder)\s+/.test(source)) return "";
++      return withoutUrls(source);
++    })
++    .join("\n");
++}
++const urlFields = ["href", "ctaHref", "src"];
++function assertAnchors(current: Project, result: Project): void {
++  // Only these block renderers emit a DOM id; other schema IDs are not targets.
++  const renderedIds = (project: Project) =>
++    new Set(
++      project.blocks
++        .filter((block) =>
++          ["section", "features", "contact"].includes(block.type),
++        )
++        .map((block) => block.id),
++    );
++  const beforeIds = renderedIds(current);
++  const afterIds = renderedIds(result);
++  const original = new Map(current.blocks.map((block) => [block.id, block]));
++  for (const block of result.blocks) {
++    for (const field of urlFields) {
++      const value = (block as Record<string, unknown>)[field];
++      if (
++        typeof value !== "string" ||
++        !value.startsWith("#") ||
++        value === "#" ||
++        afterIds.has(value.slice(1))
++      )
++        continue;
++      const previous = original.get(block.id) as
++        Record<string, unknown> | undefined;
++      if (previous?.[field] === value && !beforeIds.has(value.slice(1)))
++        continue;
++      throw new Error(
++        `Dangling anchor ${value}: retain its target or change/remove the referring link.`,
++      );
++    }
++  }
++}
++function assertGroundedUrls(
++  current: Project,
++  result: Project,
++  request: string,
++): void {
++  const supplied = new Set<string>();
++  for (const block of current.blocks) {
++    const record = block as Record<string, unknown>;
++    for (const field of urlFields)
++      if (typeof record[field] === "string") supplied.add(record[field]);
++  }
++  for (const source of [
++    current.name,
++    current.description ?? "",
++    visibleContent(current),
++    request,
++  ]) {
++    for (const match of source.matchAll(
++      /https?:\/\/[^\s"'<>\\]+|(?:^|[\s"'])(\/(?!\/)[^\s"'<>\\]+)/gi,
++    ))
++      supplied.add(match[1] ?? match[0]);
++  }
++  for (const block of result.blocks) {
++    const record = block as Record<string, unknown>;
++    for (const field of urlFields) {
++      const value = record[field];
++      if (
++        typeof value === "string" &&
++        value &&
++        (field === "src" || /^https?:/i.test(value)) &&
++        !supplied.has(value)
++      ) {
++        throw new Error(
++          `Ungrounded URL or image source: supply the exact ${field} in the request.`,
++        );
++      }
++    }
++  }
++}
++export function createEditProposal(
++  base: Project,
++  request: string,
++  operations: unknown[],
++): EditProposal {
++  const proposal = editProposalSchema.parse({
++    id: crypto.randomUUID(),
++    version: 1,
++    mode: "mock",
++    projectId: base.id,
++    baseRevision: base.revision,
++    baseSnapshot: projectSnapshot(base),
++    request,
++    summary: `Preview ${operations.length} block edit(s).`,
++    operations,
++  });
++  previewEditProposal(base, proposal);
++  return structuredClone(proposal);
++}
++export function previewEditProposal(current: Project, input: unknown): Project {
++  const proposal = editProposalSchema.parse(input);
++  const result = projectSchema.parse(current);
++  if (
++    proposal.projectId !== current.id ||
++    proposal.baseRevision !== current.revision ||
++    proposal.baseSnapshot !== projectSnapshot(current)
++  ) {
++    throw new Error(
++      "Stale proposal baseline: create a new proposal from the current project.",
++    );
++  }
++  const usedIds = new Set(result.blocks.map((block) => block.id));
++  for (const operation of proposal.operations) {
++    if (operation.op === "add") {
++      if (usedIds.has(operation.block.id))
++        throw new Error(`Duplicate or reused block ID: ${operation.block.id}`);
++      usedIds.add(operation.block.id);
++      const index =
++        operation.afterId === null
++          ? -1
++          : result.blocks.findIndex((block) => block.id === operation.afterId);
++      if (operation.afterId !== null && index === -1)
++        throw new Error(`Unknown add target: ${operation.afterId}`);
++      result.blocks.splice(index + 1, 0, operation.block);
++    } else if (operation.op === "reorder") {
++      const blocks = new Map(result.blocks.map((block) => [block.id, block]));
++      if (
++        operation.blockIds.length !== blocks.size ||
++        new Set(operation.blockIds).size !== blocks.size ||
++        operation.blockIds.some((id) => !blocks.has(id))
++      ) {
++        throw new Error(
++          "Reorder must be an exact full permutation of current block IDs.",
++        );
++      }
++      result.blocks = operation.blockIds.map((id) => blocks.get(id)!);
++    } else {
++      const index = result.blocks.findIndex(
++        (block) => block.id === operation.blockId,
++      );
++      if (index === -1)
++        throw new Error(`Unknown block target: ${operation.blockId}`);
++      if (operation.op === "remove") result.blocks.splice(index, 1);
++      else
++        result.blocks[index] = blockSchema.parse({
++          ...result.blocks[index],
++          ...operation.changes,
++        });
++    }
++  }
++  const parsed = projectSchema.parse(result);
++  assertAnchors(current, parsed);
++  assertGroundedUrls(current, parsed, proposal.request);
++  // Reuse the generation helper's deterministic fact checks, not an assertion of
++  // arbitrary prose truth (e.g. awards or nonnumeric street names in body text).
++  try {
++    assertGroundedContent(parsed.blocks.map(factContent), {
++      name: withoutUrls(current.name),
++      prompt: [
++        withoutUrls(current.description ?? ""),
++        withoutUrls(visibleContent(current)),
++        groundingRequest(proposal.request),
++      ].join("\n"),
++    });
++  } catch {
++    throw new Error(
++      "UNSUPPORTED_BUSINESS_FACT: supply numeric, email and contact facts in the request or original visible content.",
++    );
++  }
++  return parsed;
++}
+--- baseline/src/ai/mock-chat-editor.test.ts
++++ current/src/ai/mock-chat-editor.test.ts
+@@ -0,0 +1,78 @@
++import { describe, expect, it } from "vitest";
++import { sampleProject } from "../project-schema/project";
++import { previewEditProposal } from "./edit-proposal";
++import { createMockEditProposal } from "./mock-chat-editor";
++
++describe("mock chat editor", () => {
++  it("supports atomic multiline add/remove/reorder commands with host UUIDs", () => {
++    const proposal = createMockEditProposal(
++      sampleProject,
++      'add paragraph after start {"text":"Welcome"}\nubah hero-heading text "Fresh"\nremove hero-copy',
++    );
++    const added = proposal.operations[0];
++    expect(added.op).toBe("add");
++    if (added.op !== "add") throw new Error("Expected add");
++    expect(added.block.id).toMatch(
++      /^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
++    );
++    expect(added.afterId).toBeNull();
++    expect(
++      previewEditProposal(sampleProject, proposal).blocks.map(
++        (block) => block.text,
++      ),
++    ).toEqual(["Welcome", "Fresh"]);
++    const after = createMockEditProposal(
++      sampleProject,
++      'add heading after hero-heading {"text":"Middle"}',
++    );
++    expect(previewEditProposal(sampleProject, after).blocks[1].text).toBe(
++      "Middle",
++    );
++    const reordered = createMockEditProposal(
++      sampleProject,
++      "reorder hero-copy, hero-heading",
++    );
++    expect(
++      previewEditProposal(sampleProject, reordered).blocks.map(
++        (block) => block.id,
++      ),
++    ).toEqual(["hero-copy", "hero-heading"]);
++  });
++  it.each([
++    "",
++    "make it nicer",
++    "update hero-heading text Hello",
++    'add heading after start {"id":"owned","text":"Hi"}',
++    'add heading after start {"type":"paragraph","text":"Hi"}',
++    'update hero-heading id "changed"',
++    "remove unknown",
++    "reorder hero-heading",
++    'update hero-heading text "Hi"\nremove unknown',
++  ])("rejects invalid commands actionably without mutation: %s", (request) => {
++    const before = structuredClone(sampleProject);
++    expect(() => createMockEditProposal(sampleProject, request)).toThrow(
++      /command|JSON|field|target|permutation|request/i,
++    );
++    expect(sampleProject).toEqual(before);
++  });
++  it("parses explicit update commands synchronously without network", () => {
++    const before = structuredClone(sampleProject);
++    const proposal = createMockEditProposal(
++      sampleProject,
++      'update hero-heading text "Hello world"',
++    );
++    expect(proposal).not.toBeInstanceOf(Promise);
++    expect(proposal.mode).toBe("mock");
++    expect(proposal.operations).toEqual([
++      {
++        op: "update",
++        blockId: "hero-heading",
++        changes: { text: "Hello world" },
++      },
++    ]);
++    expect(previewEditProposal(sampleProject, proposal).blocks[0].text).toBe(
++      "Hello world",
++    );
++    expect(sampleProject).toEqual(before);
++  });
++});
+--- baseline/src/ai/mock-chat-editor.ts
++++ current/src/ai/mock-chat-editor.ts
+@@ -0,0 +1,76 @@
++import type { Project } from "../project-schema/project";
++import { createEditProposal, type EditProposal } from "./edit-proposal";
++
++const usage =
++  "Commands: update <block-id> <field> <JSON value>; add <block-type> after <block-id|start> <JSON properties excluding id/type>; remove <block-id>; reorder <comma-separated IDs>. Put each command on a separate line.";
++function jsonValue(source: string, line: number): unknown {
++  try {
++    return JSON.parse(source);
++  } catch {
++    throw new Error(
++      `Command line ${line}: invalid JSON; quote text values with double quotes.`,
++    );
++  }
++}
++/**
++ * Synchronous, offline command parser; never guesses natural-language intent.
++ * update (or ubah) <block-id> <field> <JSON value>
++ * add <block-type> after <block-id|start> <JSON properties excluding id/type>
++ * remove <block-id>
++ * reorder <comma-separated IDs>
++ * Newline-separated commands form one atomic proposal. JSON must fit on one line.
++ */
++export function createMockEditProposal(
++  base: Project,
++  request: string,
++): EditProposal {
++  if (typeof request !== "string" || !request.trim() || request.length > 10000)
++    throw new Error(`Request must contain 1–10000 characters. ${usage}`);
++  const lines = request
++    .split(/\r?\n/)
++    .map((line, index) => ({ text: line.trim(), number: index + 1 }))
++    .filter((line) => line.text);
++  if (lines.length > 100)
++    throw new Error("Request supports at most 100 commands.");
++  const used = new Set(base.blocks.map((block) => block.id));
++  const operations: unknown[] = lines.map(({ text, number }) => {
++    let match = /^(?:update|ubah)\s+(\S+)\s+(\S+)\s+(.+)$/.exec(text);
++    if (match)
++      return {
++        op: "update",
++        blockId: match[1],
++        changes: { [match[2]]: jsonValue(match[3], number) },
++      };
++    match = /^add\s+(\S+)\s+after\s+(\S+)\s+(.+)$/.exec(text);
++    if (match) {
++      const properties = jsonValue(match[3], number);
++      if (
++        !properties ||
++        typeof properties !== "object" ||
++        Array.isArray(properties) ||
++        ["id", "type"].some((key) => Object.hasOwn(properties, key))
++      )
++        throw new Error(
++          `Command line ${number}: add requires a JSON object excluding id and type.`,
++        );
++      let id = crypto.randomUUID();
++      while (used.has(id)) id = crypto.randomUUID();
++      used.add(id);
++      return {
++        op: "add",
++        block: { ...properties, id, type: match[1] },
++        afterId: match[2] === "start" ? null : match[2],
++      };
++    }
++    match = /^remove\s+(\S+)$/.exec(text);
++    if (match) return { op: "remove", blockId: match[1] };
++    match = /^reorder\s+(.+)$/.exec(text);
++    if (match)
++      return {
++        op: "reorder",
++        blockIds: match[1].split(",").map((id) => id.trim()),
++      };
++    throw new Error(`Command line ${number} is unsupported. ${usage}`);
++  });
++  return createEditProposal(base, request, operations);
++}
+--- baseline/src/app/App.test.tsx
++++ current/src/app/App.test.tsx
+@@ -29,7 +29,7 @@
+     expect(
+       screen.getByText(/Live generation disabled by default/),
+     ).toBeInTheDocument();
+-    expect(screen.getByText("M2C")).toBeInTheDocument();
++    expect(screen.getByText("M3 · Mock")).toBeInTheDocument();
+     expect(screen.getByText(/Eight building blocks/)).toBeInTheDocument();
+     expect(screen.getByRole("button", { name: "Save project" })).toBeEnabled();
+   });
+--- baseline/src/app/App.tsx
++++ current/src/app/App.tsx
+@@ -3,12 +3,14 @@
+ import { useProjectWorkspace } from "./use-project-workspace";
+ import { ProjectManager } from "./ProjectManager";
+ import { WebsiteGenerator } from "./WebsiteGenerator";
++import { ChatEditor } from "./ChatEditor";
+ const VisualEditor = lazy(() => import("../editor/VisualEditor"));
+ export function App() {
+   const workspace = useProjectWorkspace();
+   const [preview, setPreview] = useState(false);
+   const [projectsOpen, setProjectsOpen] = useState(false);
+   const [generatorOpen, setGeneratorOpen] = useState(false);
++  const [chatOpen, setChatOpen] = useState(false);
+   return (
+     <div className="workspace m1-workspace">
+       <header className="topbar">
+@@ -17,9 +19,16 @@
+             S
+           </span>
+           <h1>SiteForge AI</h1>
+-          <span className="milestone">M2C</span>
++          <span className="milestone">M3 · Mock</span>
+         </div>
+         <div className="top-actions">
++          <button
++            className="secondary"
++            aria-expanded={chatOpen}
++            onClick={() => setChatOpen(!chatOpen)}
++          >
++            AI chat editing
++          </button>
+           <button
+             className="secondary"
+             aria-expanded={generatorOpen}
+@@ -107,6 +116,16 @@
+           }}
+         />
+       )}
++      {chatOpen && (
++        <ChatEditor
++          key={workspace.project.id + ":" + workspace.generation}
++          project={workspace.project}
++          context={workspace.project.id + ":" + workspace.generation}
++          disabled={workspace.blocked || workspace.invalid}
++          onApply={workspace.applyProposal}
++          onClose={() => setChatOpen(false)}
++        />
++      )}
+       <div className="engine-intro">
+         <span>YOUR IDEAS. YOUR CANVAS.</span>
+         <p>Shape your next great website.</p>
+--- baseline/src/app/chat-integration.test.tsx
++++ current/src/app/chat-integration.test.tsx
+@@ -0,0 +1,85 @@
++import { beforeEach, expect, it, vi } from "vitest";
++import { fireEvent, render, screen, within } from "@testing-library/react";
++import { App } from "./App";
++import { sampleProject } from "../project-schema/project";
++
++vi.mock("../editor/VisualEditor", () => ({
++  default: () => <div>Visual editor boundary</div>,
++}));
++const key = "siteforge:project:v1:" + sampleProject.id;
++beforeEach(() => {
++  localStorage.clear();
++  localStorage.setItem(key, JSON.stringify(sampleProject));
++  history.replaceState(null, "", "/");
++});
++it("chat proposal, preview and rejection cannot mutate the project or storage", () => {
++  render(<App />);
++  fireEvent.click(screen.getByRole("button", { name: "AI chat editing" }));
++  const chat = screen.getByRole("region", { name: "Mock AI chat editing" });
++  fireEvent.change(
++    within(chat).getByRole("textbox", { name: "Edit request" }),
++    {
++      target: { value: 'update hero-heading text "A thoughtful new headline"' },
++    },
++  );
++  fireEvent.click(
++    within(chat).getByRole("button", { name: "Create mock proposal" }),
++  );
++  expect(
++    within(chat).getByRole("button", { name: "Apply proposal" }),
++  ).toBeDisabled();
++  fireEvent.click(
++    within(chat).getByRole("button", { name: "Preview proposal" }),
++  );
++  expect(
++    within(chat).getByRole("button", { name: "Apply proposal" }),
++  ).toBeEnabled();
++  expect(localStorage.getItem(key)).toBe(JSON.stringify(sampleProject));
++  expect(document.querySelector(".save-status")).toHaveTextContent(
++    "All changes saved",
++  );
++  fireEvent.click(
++    within(chat).getByRole("button", { name: "Reject proposal" }),
++  );
++  expect(localStorage.getItem(key)).toBe(JSON.stringify(sampleProject));
++  expect(document.querySelector(".save-status")).toHaveTextContent(
++    "All changes saved",
++  );
++});
++it("only Apply changes draft; only explicit Save persists and increments revision", () => {
++  render(<App />);
++  fireEvent.click(screen.getByRole("button", { name: "AI chat editing" }));
++  const chat = screen.getByRole("region", { name: "Mock AI chat editing" });
++  fireEvent.change(
++    within(chat).getByRole("textbox", { name: "Edit request" }),
++    {
++      target: { value: 'update hero-heading text "A thoughtful new headline"' },
++    },
++  );
++  fireEvent.click(
++    within(chat).getByRole("button", { name: "Create mock proposal" }),
++  );
++  fireEvent.click(
++    within(chat).getByRole("button", { name: "Preview proposal" }),
++  );
++  fireEvent.click(within(chat).getByRole("button", { name: "Apply proposal" }));
++  expect(document.querySelector(".save-status")).toHaveTextContent(
++    "Unsaved changes",
++  );
++  expect(localStorage.getItem(key)).toBe(JSON.stringify(sampleProject));
++  fireEvent.click(screen.getByRole("button", { name: "Preview" }));
++  expect(
++    within(screen.getByRole("region", { name: "Website preview" })).getByRole(
++      "heading",
++      { name: "A thoughtful new headline" },
++    ),
++  ).toBeInTheDocument();
++  fireEvent.click(screen.getByRole("button", { name: "Save project" }));
++  const stored = JSON.parse(localStorage.getItem(key)!);
++  expect(stored.revision).toBe(1);
++  expect(stored.blocks[0]).toEqual({
++    ...sampleProject.blocks[0],
++    text: "A thoughtful new headline",
++  });
++  expect(stored.blocks[1]).toEqual(sampleProject.blocks[1]);
++});
+--- baseline/src/app/chat-workspace.test.tsx
++++ current/src/app/chat-workspace.test.tsx
+@@ -0,0 +1,141 @@
++import { beforeEach, describe, expect, it } from "vitest";
++import { act, renderHook } from "@testing-library/react";
++import { useProjectWorkspace } from "./use-project-workspace";
++import { createMockEditProposal } from "../ai/mock-chat-editor";
++import { sampleProject } from "../project-schema/project";
++import { toPuckData } from "../editor/project-adapter";
++const key = "siteforge:project:v1:" + sampleProject.id;
++
++describe("mock chat workspace boundary", () => {
++  beforeEach(() => {
++    localStorage.clear();
++    history.replaceState(null, "", "/");
++  });
++  it("exposes explicit proposal application without persisting a draft", () => {
++    const { result } = renderHook(() => useProjectWorkspace());
++    expect(result.current).toHaveProperty(
++      "applyProposal",
++      expect.any(Function),
++    );
++    expect(localStorage.length).toBe(0);
++  });
++  it("Apply preserves storage/revision and rejects old editor callbacks", () => {
++    localStorage.setItem(key, JSON.stringify(sampleProject));
++    const { result } = renderHook(() => useProjectWorkspace());
++    const proposal = createMockEditProposal(
++      result.current.project,
++      'update hero-heading text "Reviewed headline"',
++    );
++    const oldAccept = result.current.accept;
++    const oldSave = result.current.save;
++    act(() => {
++      expect(result.current.applyProposal(proposal)).toBe(true);
++    });
++    expect(result.current.project.revision).toBe(0);
++    expect(result.current.project.blocks[0].text).toBe("Reviewed headline");
++    expect(localStorage.getItem(key)).toBe(JSON.stringify(sampleProject));
++    act(() => {
++      expect(oldAccept(toPuckData(sampleProject))).toBeNull();
++      oldSave(toPuckData(sampleProject));
++    });
++    expect(result.current.project.blocks[0].text).toBe("Reviewed headline");
++    expect(localStorage.getItem(key)).toBe(JSON.stringify(sampleProject));
++    act(() => result.current.save());
++    expect(JSON.parse(localStorage.getItem(key)!).revision).toBe(1);
++  });
++  it("rejects same-revision changed drafts, malformed proposals and invalid editor state", () => {
++    localStorage.setItem(key, JSON.stringify(sampleProject));
++    const { result } = renderHook(() => useProjectWorkspace());
++    const proposal = createMockEditProposal(
++      result.current.project,
++      'update hero-heading text "Reviewed headline"',
++    );
++    const changed = {
++      ...sampleProject,
++      blocks: sampleProject.blocks.map((b, i) =>
++        i ? b : { ...b, text: "Manual draft" },
++      ),
++    };
++    act(() => {
++      result.current.accept(toPuckData(changed));
++    });
++    act(() => {
++      expect(result.current.applyProposal(proposal)).toBe(false);
++    });
++    expect(result.current.project.blocks[0].text).toBe("Manual draft");
++    act(() => {
++      expect(
++        result.current.applyProposal({ ...proposal, operations: [] }),
++      ).toBe(false);
++    });
++    const fresh = createMockEditProposal(
++      result.current.project,
++      'update hero-heading text "Fresh proposal"',
++    );
++    act(() => {
++      result.current.accept({});
++    });
++    act(() => {
++      expect(result.current.applyProposal(fresh)).toBe(false);
++    });
++    expect(localStorage.getItem(key)).toBe(JSON.stringify(sampleProject));
++  });
++  it("refuses Apply and Save synchronously after invalid editor input in the same React batch", () => {
++    localStorage.setItem(key, JSON.stringify(sampleProject));
++    const { result } = renderHook(() => useProjectWorkspace());
++    const proposal = createMockEditProposal(
++      result.current.project,
++      "remove hero-copy",
++    );
++    act(() => {
++      result.current.accept({});
++      expect(result.current.applyProposal(proposal)).toBe(false);
++      result.current.save();
++    });
++    expect(result.current.invalid).toBe(true);
++    expect(result.current.project).toEqual(sampleProject);
++    expect(localStorage.getItem(key)).toBe(JSON.stringify(sampleProject));
++  });
++  it("rejects old Apply callbacks after workspace Reload", () => {
++    localStorage.setItem(key, JSON.stringify(sampleProject));
++    const { result } = renderHook(() => useProjectWorkspace());
++    const proposal = createMockEditProposal(
++      result.current.project,
++      "remove hero-copy",
++    );
++    const oldApply = result.current.applyProposal;
++    act(() => result.current.reload());
++    act(() => {
++      expect(oldApply(proposal)).toBe(false);
++    });
++    expect(result.current.project).toEqual(sampleProject);
++    expect(localStorage.getItem(key)).toBe(JSON.stringify(sampleProject));
++  });
++  it("preserves corrupt storage and refuses Apply in a blocked workspace", () => {
++    localStorage.setItem(key, "corrupt");
++    const { result } = renderHook(() => useProjectWorkspace());
++    const proposal = createMockEditProposal(sampleProject, "remove hero-copy");
++    act(() => {
++      expect(result.current.applyProposal(proposal)).toBe(false);
++    });
++    expect(result.current.blocked).toBe(true);
++    expect(localStorage.getItem(key)).toBe("corrupt");
++    expect(result.current.project).toEqual(sampleProject);
++  });
++  it("rejects a changed stored baseline even when another tab reused its revision", () => {
++    localStorage.setItem(key, JSON.stringify(sampleProject));
++    const { result } = renderHook(() => useProjectWorkspace());
++    const proposal = createMockEditProposal(
++      result.current.project,
++      "remove hero-copy",
++    );
++    const other = { ...sampleProject, name: "Same revision other tab" };
++    localStorage.setItem(key, JSON.stringify(other));
++    act(() => {
++      expect(result.current.applyProposal(proposal)).toBe(false);
++    });
++    expect(result.current.project).toEqual(sampleProject);
++    expect(localStorage.getItem(key)).toBe(JSON.stringify(other));
++    expect(result.current.error).toContain("Revision conflict");
++  });
++});
+--- baseline/src/app/ChatEditor.test.tsx
++++ current/src/app/ChatEditor.test.tsx
+@@ -0,0 +1,310 @@
++import { StrictMode } from "react";
++import { beforeEach, expect, test, vi } from "vitest";
++import { fireEvent, render, screen, within } from "@testing-library/react";
++import { sampleProject } from "../project-schema/project";
++import { ChatEditor } from "./ChatEditor";
++import * as proposalEngine from "../ai/edit-proposal";
++
++beforeEach(() => localStorage.clear());
++
++const button = (name: string) => screen.getByRole("button", { name });
++function request(value = 'update hero-heading text "Welcome"') {
++  fireEvent.change(screen.getByRole("textbox", { name: "Edit request" }), {
++    target: { value },
++  });
++}
++function setup() {
++  const project = structuredClone(sampleProject);
++  const onApply = vi.fn(() => true);
++  const onClose = vi.fn();
++  const props = {
++    project,
++    context: "starter:0",
++    disabled: false,
++    onApply,
++    onClose,
++  };
++  return {
++    ...render(
++      <StrictMode>
++        <ChatEditor {...props} />
++      </StrictMode>,
++    ),
++    props,
++  };
++}
++
++test("explains the mock command parser, current IDs and explicit unsaved workflow", () => {
++  const { props } = setup();
++  const panel = screen.getByRole("region", { name: "Mock AI chat editing" });
++  expect(panel).toHaveTextContent(/deterministic mock command parser/i);
++  expect(panel).toHaveTextContent(/not AI/i);
++  expect(panel).toHaveTextContent("hero-heading (heading)");
++  expect(panel).toHaveTextContent("hero-copy (paragraph)");
++  expect(panel).toHaveTextContent('update hero-heading text "Welcome"');
++  expect(screen.getByRole("textbox", { name: "Edit request" })).toHaveValue("");
++  expect(button("Create mock proposal")).toBeDisabled();
++  expect(button("Preview proposal")).toBeDisabled();
++  expect(button("Apply proposal")).toBeDisabled();
++  expect(button("Reject proposal")).toBeDisabled();
++  fireEvent.click(button("Close chat editor"));
++  expect(props.onClose).toHaveBeenCalledOnce();
++  expect(props.onApply).not.toHaveBeenCalled();
++  expect(localStorage.length).toBe(0);
++});
++
++test("previews using safe before/after renderers and applies only the unsaved proposal", () => {
++  const { props } = setup();
++  const original = structuredClone(props.project);
++  request();
++  fireEvent.click(button("Create mock proposal"));
++  fireEvent.click(button("Apply proposal"));
++  expect(props.onApply).not.toHaveBeenCalled();
++  fireEvent.click(button("Preview proposal"));
++  expect(
++    within(screen.getByRole("region", { name: "Before proposal" })).getByRole(
++      "heading",
++      { name: original.blocks[0].text },
++    ),
++  ).toBeInTheDocument();
++  expect(
++    within(screen.getByRole("region", { name: "After proposal" })).getByRole(
++      "heading",
++      { name: "Welcome" },
++    ),
++  ).toBeInTheDocument();
++  expect(button("Apply proposal")).not.toBeDisabled();
++  fireEvent.click(button("Apply proposal"));
++  expect(props.onApply).toHaveBeenCalledExactlyOnceWith(
++    expect.objectContaining({
++      version: 1,
++      mode: "mock",
++      projectId: original.id,
++      baseRevision: original.revision,
++      request: 'update hero-heading text "Welcome"',
++    }),
++  );
++  expect(screen.queryByRole("region", { name: "Edit proposal" })).toBeNull();
++  expect(screen.queryByRole("region", { name: "After proposal" })).toBeNull();
++  expect(screen.getByRole("status")).toHaveTextContent(
++    /applied to (the )?unsaved draft/i,
++  );
++  expect(props.project).toEqual(original);
++  expect(localStorage.length).toBe(0);
++});
++
++test("rejects a proposal and preview without mutating or persisting the project", () => {
++  const { props } = setup();
++  const original = structuredClone(props.project);
++  request();
++  fireEvent.click(button("Create mock proposal"));
++  fireEvent.click(button("Preview proposal"));
++  fireEvent.click(button("Reject proposal"));
++  expect(screen.queryByRole("region", { name: "Edit proposal" })).toBeNull();
++  expect(screen.queryByRole("region", { name: "After proposal" })).toBeNull();
++  expect(button("Apply proposal")).toBeDisabled();
++  expect(props.onApply).not.toHaveBeenCalled();
++  expect(props.project).toEqual(original);
++  expect(localStorage.length).toBe(0);
++});
++
++test.each(["snapshot", "revision", "identity", "context", "disabled"])(
++  "permanently invalidates a preview after a %s transition, even if restored",
++  (transition) => {
++    const { props, rerender } = setup();
++    request();
++    fireEvent.click(button("Create mock proposal"));
++    fireEvent.click(button("Preview proposal"));
++    const changed = structuredClone(props.project);
++    if (transition === "snapshot") changed.blocks[0].text = "Manual edit";
++    if (transition === "revision") changed.revision++;
++    if (transition === "identity") changed.id = "different-project";
++    rerender(
++      <StrictMode>
++        <ChatEditor
++          {...props}
++          project={changed}
++          context={transition === "context" ? "new:1" : props.context}
++          disabled={transition === "disabled"}
++        />
++      </StrictMode>,
++    );
++    expect(button("Apply proposal")).toBeDisabled();
++    rerender(
++      <StrictMode>
++        <ChatEditor {...props} />
++      </StrictMode>,
++    );
++    expect(button("Apply proposal")).toBeDisabled();
++    expect(button("Preview proposal")).toBeDisabled();
++    expect(screen.getByRole("alert")).toHaveTextContent(
++      /changed|invalid|stale/i,
++    );
++    expect(screen.queryByRole("region", { name: "After proposal" })).toBeNull();
++    fireEvent.click(button("Apply proposal"));
++    expect(props.onApply).not.toHaveBeenCalled();
++    fireEvent.click(button("Create mock proposal"));
++    fireEvent.click(button("Preview proposal"));
++    expect(button("Apply proposal")).not.toBeDisabled();
++  },
++);
++
++test("retains the proposal and reports an error when the parent refuses apply", () => {
++  const { props } = setup();
++  props.onApply.mockReturnValue(false);
++  request();
++  fireEvent.click(button("Create mock proposal"));
++  fireEvent.click(button("Preview proposal"));
++  fireEvent.click(button("Apply proposal"));
++  expect(props.onApply).toHaveBeenCalledOnce();
++  expect(screen.getByRole("alert")).toHaveTextContent(
++    /not applied|could not apply/i,
++  );
++  expect(
++    screen.getByRole("region", { name: "Edit proposal" }),
++  ).toBeInTheDocument();
++  expect(localStorage.length).toBe(0);
++});
++
++test.each([
++  "please make it nicer",
++  'update missing text "Hello"',
++  "update hero-heading text null",
++  'add button after start {"text":"Bad","href":"javascript:alert(1)"}',
++])("reports invalid commands without changing the draft: %s", (command) => {
++  const { props } = setup();
++  const original = structuredClone(props.project);
++  request(command);
++  fireEvent.click(button("Create mock proposal"));
++  expect(screen.getByRole("alert")).toHaveTextContent(/valid mock proposal/i);
++  expect(button("Preview proposal")).toBeDisabled();
++  expect(button("Apply proposal")).toBeDisabled();
++  expect(props.onApply).not.toHaveBeenCalled();
++  expect(props.project).toEqual(original);
++  expect(localStorage.length).toBe(0);
++});
++
++test("explains an unknown command target without exposing raw validation payloads", () => {
++  setup();
++  request('update missing text "Hello"');
++  fireEvent.click(button("Create mock proposal"));
++  expect(screen.getByRole("alert")).toHaveTextContent(
++    "Unknown block target: missing",
++  );
++});
++
++test("clears a preview and candidate when the request changes or a new proposal is created", () => {
++  setup();
++  request();
++  fireEvent.click(button("Create mock proposal"));
++  fireEvent.click(button("Preview proposal"));
++  request('update hero-heading text "Changed request"');
++  expect(button("Apply proposal")).toBeDisabled();
++  expect(screen.queryByRole("region", { name: "Edit proposal" })).toBeNull();
++  expect(screen.queryByRole("region", { name: "After proposal" })).toBeNull();
++  fireEvent.click(button("Create mock proposal"));
++  fireEvent.click(button("Preview proposal"));
++  fireEvent.click(button("Create mock proposal"));
++  expect(button("Apply proposal")).toBeDisabled();
++  expect(screen.queryByRole("region", { name: "After proposal" })).toBeNull();
++});
++
++test("prevents generation, preview and apply while editing is disabled", () => {
++  const { props, rerender } = setup();
++  request();
++  rerender(<ChatEditor {...props} disabled />);
++  expect(screen.getByRole("textbox", { name: "Edit request" })).toBeDisabled();
++  for (const name of [
++    "Create mock proposal",
++    "Preview proposal",
++    "Apply proposal",
++  ]) {
++    expect(button(name)).toBeDisabled();
++    fireEvent.click(button(name));
++  }
++  expect(screen.queryByRole("region", { name: "Edit proposal" })).toBeNull();
++  expect(props.onApply).not.toHaveBeenCalled();
++  fireEvent.click(button("Close chat editor"));
++  expect(props.onClose).toHaveBeenCalledOnce();
++});
++
++test("shows add, remove and reorder operations with before/after IDs and safe text previews", () => {
++  const { props } = setup();
++  request(
++    'add paragraph after start {"text":"<script>not executable</script>"}\nremove hero-copy',
++  );
++  fireEvent.click(button("Create mock proposal"));
++  const proposal = screen.getByRole("region", { name: "Edit proposal" });
++  expect(proposal).toHaveTextContent('"add"');
++  expect(proposal).toHaveTextContent('"remove"');
++  expect(proposal).toHaveTextContent("hero-copy");
++  expect(proposal).toHaveTextContent("null");
++  fireEvent.click(button("Preview proposal"));
++  const after = screen.getByRole("region", { name: "After proposal" });
++  expect(
++    within(after).getByText("<script>not executable</script>"),
++  ).toBeInTheDocument();
++  expect(after.querySelector("script")).toBeNull();
++  expect(props.project.blocks).toHaveLength(2);
++  fireEvent.click(button("Reject proposal"));
++  request("reorder hero-copy,hero-heading");
++  fireEvent.click(button("Create mock proposal"));
++  expect(
++    screen.getByRole("region", { name: "Edit proposal" }),
++  ).toHaveTextContent("Before order: hero-heading, hero-copy");
++  expect(
++    screen.getByRole("region", { name: "Edit proposal" }),
++  ).toHaveTextContent("After order: hero-copy, hero-heading");
++  fireEvent.click(button("Preview proposal"));
++  expect(
++    screen.getByRole("region", { name: "After proposal" }).textContent,
++  ).toMatch(/We turn bold ambitions.*Great ideas deserve/);
++  expect(props.onApply).not.toHaveBeenCalled();
++  expect(localStorage.length).toBe(0);
++});
++
++test("revalidates on preview and never enables apply when validation fails", () => {
++  const { props } = setup();
++  request();
++  fireEvent.click(button("Create mock proposal"));
++  const validate = vi
++    .spyOn(proposalEngine, "previewEditProposal")
++    .mockImplementationOnce(() => {
++      throw new Error("Invalidated proposal");
++    });
++  try {
++    fireEvent.click(button("Preview proposal"));
++    expect(validate).toHaveBeenCalledExactlyOnceWith(
++      props.project,
++      expect.objectContaining({ mode: "mock" }),
++    );
++    expect(screen.getByRole("alert")).toHaveTextContent(
++      /preview is no longer valid/i,
++    );
++    expect(button("Apply proposal")).toBeDisabled();
++    expect(screen.queryByRole("region", { name: "After proposal" })).toBeNull();
++    expect(props.onApply).not.toHaveBeenCalled();
++  } finally {
++    validate.mockRestore();
++  }
++});
++
++test("creates a structured proposal before allowing preview or apply", () => {
++  const { props } = setup();
++  const before = structuredClone(props.project);
++  request();
++  fireEvent.click(button("Create mock proposal"));
++  const proposal = screen.getByRole("region", { name: "Edit proposal" });
++  expect(proposal).toHaveTextContent("hero-heading");
++  expect(proposal).toHaveTextContent("update");
++  expect(proposal).toHaveTextContent("Great ideas deserve a place to grow.");
++  expect(proposal).toHaveTextContent("Welcome");
++  expect(proposal).toHaveTextContent(/before/i);
++  expect(proposal).toHaveTextContent(/after/i);
++  expect(button("Preview proposal")).not.toBeDisabled();
++  expect(button("Apply proposal")).toBeDisabled();
++  expect(screen.queryByRole("region", { name: "After proposal" })).toBeNull();
++  expect(props.onApply).not.toHaveBeenCalled();
++  expect(props.project).toEqual(before);
++  expect(localStorage.length).toBe(0);
++});
+--- baseline/src/app/ChatEditor.tsx
++++ current/src/app/ChatEditor.tsx
+@@ -0,0 +1,254 @@
++import { useId, useState } from "react";
++import { ZodError } from "zod";
++import { createMockEditProposal } from "../ai/mock-chat-editor";
++import { previewEditProposal, type EditProposal } from "../ai/edit-proposal";
++import type { Project } from "../project-schema/project";
++import { ProjectRenderer } from "../renderer/ProjectRenderer";
++
++export function ChatEditor({
++  project,
++  context,
++  disabled,
++  onApply,
++  onClose,
++}: {
++  project: Project;
++  context: string;
++  disabled: boolean;
++  onApply: (proposal: EditProposal) => boolean;
++  onClose: () => void;
++}) {
++  const requestId = useId();
++  const [request, setRequest] = useState("");
++  const [candidate, setCandidate] = useState<{
++    proposal: EditProposal;
++    after: Project;
++  } | null>(null);
++  const [error, setError] = useState("");
++  const [preview, setPreview] = useState<Project | null>(null);
++  const [notice, setNotice] = useState("");
++  const snapshot = JSON.stringify(project);
++  const [observed, setObserved] = useState({ snapshot, context, disabled });
++  // Invalidate during render, not in an effect: stale controls never commit enabled.
++  // Remember every transition, including an invalid edit followed by a restoration.
++  if (
++    observed.snapshot !== snapshot ||
++    observed.context !== context ||
++    observed.disabled !== disabled
++  ) {
++    setObserved({ snapshot, context, disabled });
++    if (candidate) {
++      setCandidate(null);
++      setPreview(null);
++      setNotice("");
++      setError(
++        "The project or editing state changed. The stale proposal was invalidated; create a new proposal.",
++      );
++    }
++  }
++  function previewProposal() {
++    if (disabled || !candidate) return;
++    setPreview(null);
++    setError("");
++    try {
++      setPreview(previewEditProposal(project, candidate.proposal));
++    } catch {
++      setError(
++        "Proposal preview is no longer valid. Reject it and create a new proposal.",
++      );
++    }
++  }
++  function applyProposal() {
++    if (disabled || !candidate || !preview) return;
++    if (onApply(candidate.proposal)) {
++      setCandidate(null);
++      setPreview(null);
++      setError("");
++      setNotice(
++        "Applied to the unsaved draft. Use Save project separately to persist changes.",
++      );
++    } else {
++      setError(
++        "Proposal was not applied. The current draft could not accept it; reject it or try again after checking the draft.",
++      );
++    }
++  }
++  function createProposal() {
++    if (disabled || !request.trim()) return;
++    setCandidate(null);
++    setPreview(null);
++    setNotice("");
++    setError("");
++    try {
++      const proposal = createMockEditProposal(project, request);
++      const after = previewEditProposal(project, proposal);
++      setCandidate({ proposal, after });
++    } catch (cause) {
++      const detail =
++        cause instanceof ZodError
++          ? "Check required block fields, allowed values and safe URLs."
++          : cause instanceof Error
++            ? cause.message.slice(0, 600)
++            : "Check the commands, block IDs and JSON values.";
++      setError("Could not create a valid mock proposal. " + detail);
++    }
++  }
++  return (
++    <section aria-label="Mock AI chat editing">
++      <h2>Mock chat editor</h2>
++      <p>
++        Deterministic mock command parser — not AI. No model or network calls.
++      </p>
++      <p>
++        Apply changes only the unsaved draft. Use Save project separately to
++        persist changes.
++      </p>
++      <h3>Current block IDs and types</h3>
++      <ul>
++        {project.blocks.map((block) => (
++          <li key={block.id}>
++            {block.id} ({block.type})
++          </li>
++        ))}
++      </ul>
++      <h3>Copyable command examples</h3>
++      <pre>{`update ${project.blocks[0]?.id ?? "block-id"} text "Welcome"\nadd paragraph after start {"text":"New paragraph"}\nremove ${project.blocks[0]?.id ?? "block-id"}\nreorder ${project.blocks.map((block) => block.id).join(",")}`}</pre>
++      <p>
++        Use one command per line to batch changes. Add properties exclude id and
++        type.
++      </p>
++      <label htmlFor={requestId}>Edit request</label>
++      <textarea
++        id={requestId}
++        value={request}
++        disabled={disabled}
++        onChange={(event) => {
++          setRequest(event.target.value);
++          setCandidate(null);
++          setPreview(null);
++          setError("");
++          setNotice("");
++        }}
++      />
++      {error && <p role="alert">{error}</p>}
++      <button
++        type="button"
++        disabled={disabled || !request.trim()}
++        onClick={createProposal}
++      >
++        Create mock proposal
++      </button>
++      {candidate && (
++        <section aria-label="Edit proposal">
++          <h3>{candidate.proposal.summary}</h3>
++          <dl>
++            <dt>Proposal ID</dt>
++            <dd>{candidate.proposal.id}</dd>
++            <dt>Project ID</dt>
++            <dd>{candidate.proposal.projectId}</dd>
++            <dt>Base revision</dt>
++            <dd>{candidate.proposal.baseRevision}</dd>
++            <dt>Request</dt>
++            <dd>{candidate.proposal.request}</dd>
++          </dl>
++          <h4>Operations</h4>
++          <pre>{JSON.stringify(candidate.proposal.operations, null, 2)}</pre>
++          <table>
++            <caption>Operations diff — block IDs, values and order</caption>
++            <thead>
++              <tr>
++                <th scope="col">Block ID</th>
++                <th scope="col">Before</th>
++                <th scope="col">After</th>
++              </tr>
++            </thead>
++            <tbody>
++              {Array.from(
++                new Set(
++                  [...project.blocks, ...candidate.after.blocks].map(
++                    (block) => block.id,
++                  ),
++                ),
++              ).map((id) => (
++                <tr key={id}>
++                  <th scope="row">{id}</th>
++                  <td>
++                    <pre>
++                      {JSON.stringify(
++                        project.blocks.find((block) => block.id === id) ?? null,
++                        null,
++                        2,
++                      )}
++                    </pre>
++                  </td>
++                  <td>
++                    <pre>
++                      {JSON.stringify(
++                        candidate.after.blocks.find(
++                          (block) => block.id === id,
++                        ) ?? null,
++                        null,
++                        2,
++                      )}
++                    </pre>
++                  </td>
++                </tr>
++              ))}
++            </tbody>
++          </table>
++          <p>
++            Before order:{" "}
++            {project.blocks.map((block) => block.id).join(", ") || "(empty)"}
++          </p>
++          <p>
++            After order:{" "}
++            {candidate.after.blocks.map((block) => block.id).join(", ") ||
++              "(empty)"}
++          </p>
++        </section>
++      )}
++      <button
++        type="button"
++        disabled={disabled || !candidate}
++        onClick={previewProposal}
++      >
++        Preview proposal
++      </button>
++      {preview && (
++        <>
++          <section aria-label="Before proposal">
++            <h3>Before proposal</h3>
++            <ProjectRenderer project={project} />
++          </section>
++          <section aria-label="After proposal">
++            <h3>After proposal</h3>
++            <ProjectRenderer project={preview} />
++          </section>
++        </>
++      )}
++      {notice && <p role="status">{notice}</p>}
++      <button
++        type="button"
++        disabled={disabled || !candidate || !preview}
++        onClick={applyProposal}
++      >
++        Apply proposal
++      </button>
++      <button
++        type="button"
++        disabled={!candidate}
++        onClick={() => {
++          setCandidate(null);
++          setPreview(null);
++          setError("");
++          setNotice("Proposal rejected. The project was not changed.");
++        }}
++      >
++        Reject proposal
++      </button>
++      <button type="button" onClick={onClose}>
++        Close chat editor
++      </button>
++    </section>
++  );
++}
+--- baseline/src/app/use-project-workspace.ts
++++ current/src/app/use-project-workspace.ts
+@@ -3,6 +3,11 @@
+ import { createLocalProjectStore } from "../persistence/local-project-store";
+ import { fromPuckData } from "../editor/project-adapter";
+ import { createProjectLibrary } from "../persistence/project-library";
++import {
++  previewEditProposal,
++  projectSnapshot,
++  type EditProposal,
++} from "../ai/edit-proposal";
+ function selectProjectUrl(id: string | null) {
+   const url = new URL(window.location.href);
+   if (id === null) url.searchParams.delete("project");
+@@ -48,7 +53,13 @@
+   const [saved, setSaved] = useState<Project | null>(initial.saved);
+   const [error, setError] = useState(initial.error);
+   const [blocked, setBlocked] = useState(initial.blocked);
+-  const [invalid, setInvalid] = useState(false);
++  const [invalid, setInvalidState] = useState(false);
++  // Callbacks can run in one React batch before state is committed.
++  const invalidNow = useRef(false);
++  function setInvalid(value: boolean) {
++    invalidNow.current = value;
++    setInvalidState(value);
++  }
+   const [generation, setGeneration] = useState(0);
+   // An old Puck instance may finish async work after unmount. Never apply its data to a new document.
+   const editorEpoch = useRef(0);
+@@ -89,10 +100,47 @@
+       return null;
+     }
+   }
++  function applyProposal(proposal: EditProposal): boolean {
++    if (generation !== editorEpoch.current || blocked || invalidNow.current)
++      return false;
++    try {
++      // Another tab may have saved since this draft was loaded. Never apply against
++      // a changed storage baseline, even though Apply itself does not persist.
++      const stored = createLocalProjectStore(window.localStorage).load(
++        current.current.id,
++      );
++      if (
++        (stored === null) !== (saved === null) ||
++        (stored !== null &&
++          saved !== null &&
++          projectSnapshot(stored) !== projectSnapshot(saved))
++      )
++        throw new Error(
++          "Revision conflict. Reload the saved project before creating a new proposal.",
++        );
++      const next = previewEditProposal(current.current, proposal);
++      current.current = next;
++      setProject(next);
++      setInvalid(false);
++      setError("");
++      advanceEditor();
++      setNotice(
++        "Proposal applied to unsaved draft. Use Save project to persist it.",
++      );
++      return true;
++    } catch (error) {
++      setError(
++        "Could not apply proposal. Current edits and stored data were preserved. " +
++          message(error),
++      );
++      return false;
++    }
++  }
+   function save(data?: unknown) {
+     if (generation !== editorEpoch.current) return;
+     const candidate = data === undefined ? current.current : accept(data);
+-    if (!candidate || blocked || (data === undefined && invalid)) return;
++    if (!candidate || blocked || (data === undefined && invalidNow.current))
++      return;
+     try {
+       const next = {
+         ...candidate,
+@@ -246,6 +294,7 @@
+     generation,
+     notice,
+     accept,
++    applyProposal,
+     save,
+     reload,
+   };

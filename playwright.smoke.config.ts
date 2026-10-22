@@ -2,9 +2,14 @@ import { defineConfig } from "@playwright/test";
 import base from "./playwright.config";
 const mode = process.env.SITEFORGE_OBSERVER_MODE;
 const scenario = process.env.SITEFORGE_OBSERVER_SCENARIO ?? "smoke-two-blocks";
-if (!["smoke-two-blocks", "coffee-shop"].includes(scenario))
+if (!["smoke-two-blocks", "coffee-shop", "premium-cafe"].includes(scenario))
   throw new Error("Unknown smoke scenario refused.");
-if (mode !== "mock" && mode !== "live-approved")
+const mock = mode === "mock" || mode === "mock-routed";
+if (
+  !["mock", "mock-routed", "live-approved", "live-routed-approved"].includes(
+    mode ?? "",
+  )
+)
   throw new Error("Smoke observer is disabled without an explicit mode.");
 export default defineConfig({
   ...base,
@@ -26,13 +31,13 @@ export default defineConfig({
     navigationTimeout: 10000,
   },
   webServer: [
-    ...(mode === "mock"
+    ...(mock
       ? [
           {
             command:
-              scenario === "coffee-shop"
+              scenario === "coffee-shop" || scenario === "premium-cafe"
                 ? "node --import tsx scripts/mock-coffee-smoke.ts"
-                : "node --import tsx server/smoke-start.ts --mock",
+                : `node --import tsx server/smoke-start.ts ${mode === "mock-routed" ? "--mock-routed" : "--mock"}`,
             url: "http://127.0.0.1:5188/api/generation/status",
             reuseExistingServer: false,
           },

@@ -1,0 +1,82 @@
+{
+  "scope": "local/mock only; no real Gemini API requests",
+  "routerEnabledByDefault": false,
+  "modelCatalog": [
+    "gemini-3.5-flash-lite",
+    "gemini-3.8-flash"
+  ],
+  "reports": {
+    "ui": {
+      "total": 156,
+      "passed": 156,
+      "failed": 0,
+      "success": true
+    },
+    "server": {
+      "total": 256,
+      "passed": 256,
+      "failed": 0,
+      "success": true
+    },
+    "browser": {
+      "startTime": "2026-10-20T02:53:53.667Z",
+      "duration": 54234.043000000005,
+      "expected": 39,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "observability": {
+      "startTime": "2026-10-20T02:54:48.684Z",
+      "duration": 31747.935999999998,
+      "expected": 26,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  },
+  "unchangedBoundaries": {
+    "server/gemini-provider.ts": true,
+    "server/website-plan-request.ts": true,
+    "src/ai/website-plan.ts": true,
+    "src/project-schema/project.ts": true,
+    "server/smoke-startup.ts": true,
+    "server/smoke-start.ts": true
+  },
+  "sourceBuildSha256": {
+    "server/model-router.ts": "99e1ad8a2e7be6b61223d8eaa1f02ccc8aad2a6cf94d4994451b7c72fe83bf0e",
+    "server/model-router-config.ts": "c4bc49381effba6f57205e4cd2fe0ce175c3936300471e3b439ba39d9bb60ad6",
+    "server/gemini-model-catalog.ts": "15da460714bfb92b64d2f7955910e8423db326db693e2cfd72b5798b53e71544",
+    "server/routed-generation-provider.ts": "1f253866e0e392a324eea1430396ddb606c8939258c23ef34d949df72af7c28a",
+    "server/config.ts": "8987d8d267b077225491c5cb3bff2f1d86edbb8ae2535173247627d330800822",
+    "server/generation-server.ts": "a4b32dec4a66f4118c8dfb8b016406125caa1dc7886dba4c5694030722f8523f",
+    "src/ai/model-routing.ts": "67bb577c426a2a7fbd5e8b07cb84931f1fbec44d6be82c103f0755c37ed370b3",
+    "src/ai/generation-observation.ts": "6b846d494cd692116297b27dae4ef5df1ff74f6998b144b18422c3a10d200482",
+    "src/ai/website-generation.ts": "c02dad0de0618685141e15a544b2ca8abccded2bc66c6c942e942c443905fbcc",
+    "dist/index.html": "8101e22f97107092dafb970fe9004c199ff14be89eb2663dad930cd45df5bb58",
+    "dist/assets/chunk-2CNEFIQP-B59-1SSV.js": "12f476c2a33aaf42e5546801e0bc23ac4e2188281edf8c8cd618c8f600d279c6",
+    "dist/assets/chunk-4P4VZS4P-BBY-M8fN.js": "3de6e417beff0ec510f9b2367bd58d5733406d96af7d2d331d833d1f39cf3e1a",
+    "dist/assets/chunk-67Y7M4OJ-C8PH7pq-.js": "85a86563b7bdcb65da418e7cbbd6d4ad2937fa38d1a5aadff58dfbed57e62c81",
+    "dist/assets/chunk-GNR2HNTB-i8QgxX8M.js": "0aff218796bbb27f6ca2d9d764a4c83186a0a162ba807a06dc917b5cf23ab4d1",
+    "dist/assets/chunk-K2LNXU54-CEO9WxmS.js": "6ec16a18c7b7a87edd86c61c209f016a7dc33bf6d969c8b14f5e82fcf6809a2c",
+    "dist/assets/chunk-NJTGWYYH-B_wq_83y.js": "58c27f59dff58d8dc97760cb4525291bbec17f9fbee60eabe85d0f0811cb5700",
+    "dist/assets/dist-Ci0VjeCK.js": "a2137e97ad6257fea84889115b403f2a5f8fbebb8d08c3dcbf641089cda0c2d6",
+    "dist/assets/dist-ClwVNTz5.js": "7d9b9cfc70cf881212883c7432fc1d71fe00428d5d5df5fed7b22de7a4765951",
+    "dist/assets/Editor-44C53YAG-B6dF_uZp.js": "5cc3a083a8de0046a9abc04cf950f7778a3587b938e7c93f2950c45e30a1a91f",
+    "dist/assets/full-7ZJV44EE-D3ZKDcxW.js": "4733107a73e6ec38165b5e0e6ab55ef2a4b46e286921bd6984c000a1a7869cf0",
+    "dist/assets/index-CjMwLThe.js": "1aa55702382bb2013baed2d71923ebc4ad596736462dc4ac449fe776e9a8f957",
+    "dist/assets/index-HygbIc42.css": "9e257ea222da993a9666051c38c1fea8ba446b08eab9e94aed4a75a9b4c1f9fc",
+    "dist/assets/jsx-runtime-KAotR2AD.js": "69ecb51925a2f75fe2bd96c59966b762193a5a9b41dbdf46df29583e090d12d6",
+    "dist/assets/loaded-36WRJPBT-DZCpeLLR.js": "fb2ea4b7bf1a8c8942d096a6ffe854fdbe63c1a9144f0420ef7cb9bec222c00f",
+    "dist/assets/loaded-JKA25A3T-QFB0Ybt8.js": "d9b595645455f94e5817115f7493a5ea632cc290a6046027334082eca3c26c1f",
+    "dist/assets/loaded-SMPR6KZF-D4VG76sQ.js": "8b77ea509bcecf0273f2d7225ca45b64bc925a068d29c6b2110ae1884e0544ff",
+    "dist/assets/Render-DQXAYUBI-DkppcrAX.js": "4061f3db0aa42e0236689b8e0a1d292387d1018c2335d29ccb449de278917eac",
+    "dist/assets/VisualEditor-DTEEZBXA.css": "3e841537f385696e411318f884eaf738785d26beecb5d68a2f81d50dd928e6f3",
+    "dist/assets/VisualEditor-I5BlEtXL.js": "dd05c11fe341aff58a1da0b7778afa9f3413476fc71fbbe394e41a4ee0d86a37"
+  },
+  "ports": {
+    "5178": "occupied",
+    "5188": "free",
+    "5189": "free"
+  }
+}

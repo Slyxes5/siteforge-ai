@@ -1,0 +1,104 @@
+{
+  "milestone": "M3 Phase 1 — Mock AI Chat Editing",
+  "status": "complete; stopped before real AI integration",
+  "project": "C:/Projects/siteforge-ai",
+  "baseline": {
+    "gitMetadataPresent": false,
+    "priorM3ImplementationFound": false,
+    "preservedLegacyContract": [
+      "src/ai/provider.ts",
+      "src/ai/changes.ts"
+    ],
+    "sourceCheckpoint": "backups/m3-phase1-baseline-20261020-181508.zip",
+    "frontendTests": 158,
+    "serverTests": 358
+  },
+  "delivered": [
+    "Strict structured update/add/remove/reorder proposal contract",
+    "Offline deterministic mock command parser with explicit mock label",
+    "Chat → Proposal/diff → Preview → Apply/Reject → explicit Save",
+    "Immutable atomic previews and full canonical snapshot revision safety",
+    "Block identity, grounding, rendered anchor and canonical schema validation",
+    "Puck epoch remount protection and synchronous invalid-editor guard"
+  ],
+  "verification": {
+    "typecheck": {
+      "command": "npm run typecheck",
+      "passed": true
+    },
+    "unitIntegrationRegression": {
+      "command": "npm test",
+      "frontendPassed": 243,
+      "frontendFiles": 35,
+      "serverPassed": 358,
+      "serverFiles": 31,
+      "exitCode": 0
+    },
+    "buildAndBrowser": {
+      "command": "npm run test:e2e",
+      "buildPassed": true,
+      "mainPassed": 56,
+      "chatCases": 12,
+      "observabilityPassed": 26,
+      "mainUnexpected": 0,
+      "observabilityUnexpected": 0,
+      "retries": 0,
+      "exitCode": 0,
+      "reports": [
+        "test-results/results.json",
+        "test-results/observability-results.json"
+      ]
+    },
+    "bundle": {
+      "command": "npm run verify:bundle",
+      "passed": true,
+      "result": "No checked credential patterns, backend key variables, Gemini/OpenRouter endpoints or injected sentinel in client artifacts"
+    },
+    "format": {
+      "command": "npm exec prettier -- --check <all changed TypeScript files>",
+      "passed": true
+    },
+    "independentReview": {
+      "passed": true,
+      "securityConcerns": [],
+      "logicErrors": [],
+      "report": "docs/m3-phase1-review.json"
+    },
+    "testPortsReleased": [
+      5188,
+      5189
+    ]
+  },
+  "intermittentEarlierRuns": [
+    {
+      "suite": "server/smoke-startup.test.ts disabled CLI startup",
+      "symptom": "Child exited before ready; diagnostic suppressed",
+      "resolution": "Isolated test passed, full server suite passed and later npm test passed without source change or ledger deletion",
+      "rootCause": "Not established"
+    },
+    {
+      "suite": "e2e/model-router.spec.ts and e2e/website-plan.spec.ts",
+      "symptom": "Chrome Network.getResponseBody resource identifier unavailable",
+      "resolution": "Final complete test:e2e passed 56 main plus 26 observability with zero retry configuration",
+      "rootCause": "Not established; occurred in unchanged generation test paths"
+    }
+  ],
+  "scope": {
+    "liveGeminiOpenRouterRequests": 0,
+    "chatApiRequests": 0,
+    "keysRead": false,
+    "globalCodex9RouterConfigChanged": false,
+    "canonicalSchemaChanged": false,
+    "providerImplementationChanged": false,
+    "otherProjectsChanged": false,
+    "M4Started": false,
+    "databaseDeploymentRedesign": false,
+    "autoSaveAdded": false
+  },
+  "limits": [
+    "Mock parser accepts documented commands, not arbitrary natural language",
+    "Deterministic grounding does not prove arbitrary nonnumeric prose truth",
+    "Cross-tab storage revision checks are optimistic, not atomic transactions",
+    "Unsaved proposals and drafts are not durably recovered after browser refresh"
+  ]
+}

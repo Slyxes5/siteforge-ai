@@ -1,8 +1,8 @@
 # SiteForge AI
 
-M3 Phase 1 — mock AI chat editing, retaining the M0–M2C engine. React, TypeScript, Vite, Tailwind, Zod and Puck. Functionality first: no major UI redesign. The prior M2C OpenRouter live acceptance is historical; this phase is local mock-only and does not authorize any live provider requests.
+M3 Phase 2B — structured chat editing, retaining the M0–M2C engine. React, TypeScript, Vite, Tailwind, Zod and Puck. Stage 3B connects the OpenRouter editing adapter to the backend and UI behind independent server activation and explicit content consent. Development verification uses synthetic responses. One approved live editing smoke succeeded through Preview, Apply, Save and reload on 21 October 2026; that one-request approval is spent. See [live editing evidence and launcher](docs/m3-phase2b-live-edit-smoke.md).
 
-See [M3 mock editing workflow and safety](docs/m3-phase1.md). Open **AI chat editing** for Chat → Proposal → Preview → Apply/Reject → explicit **Save project**. The deterministic command parser is labeled mock, not real AI. No chat backend or API key is needed.
+See [Stage 3B integration, verification and activation boundaries](docs/m3-phase2b-stage3b.md) and the historical [M3 mock editing workflow](docs/m3-phase1.md). Open **AI chat editing** for Request → Proposal → Preview → Apply/Reject → explicit **Save project**. Offline commands remain the default and need no backend or API key. Selecting **AI editing (OpenRouter)** requires content consent and an explicitly enabled backend; choosing the mode alone never sends a request.
 
 See [M2C capabilities, verification and limits](docs/m2c-verification.md), [implementation plan](docs/m2c-plan.md), and [machine-readable evidence](docs/m2c-verification.json).
 
@@ -37,7 +37,7 @@ For mock-only development, start `npm run backend:mock` in a separate terminal. 
 - Mock output is conspicuously labeled **TEST MOCK — not real AI** and persists that provenance.
 - **Use local template fallback** needs no backend and is explicitly **not AI**. Unlike the existing M2A Create Project action, this fallback previews an unsaved candidate first.
 - Cancel, close, context switches and deadlines invalidate pending responses. No delayed result is adopted into a different workspace.
-- Generation is restricted to eight allowlisted blocks, local sample images and valid section anchors. No arbitrary HTML, scripts, tool calls or generated code is executed. Editor URL capabilities after saving remain the existing M1 policy.
+- Generation is restricted to ten allowlisted block types, local sample images and valid section anchors. No arbitrary HTML, scripts, tool calls or generated code is executed. Editor URL capabilities after saving remain the existing M1 policy.
 - The M2C Gemini prompt/structured contract is tested with injected responses. One earlier M2B live two-block smoke succeeded; the M2C three-block live attempt ended in a provider HTTP error before content validation, so M2C category/language/content quality is **not live-verified**. Current model/account/quota readiness is not inferred from the historical M2B smoke.
 
 ## Observability and bounded generation
@@ -88,6 +88,20 @@ Open **Projects** to create, list, open, rename or delete saved websites.
 
 Browser data belongs to the exact origin. `127.0.0.1:5178`, `localhost:5178` and another port have separate stores. Export/import is the current deliberate way to move documents. See [storage and migration strategy](docs/storage-migration.md).
 
+## Generated website design
+
+Generation supports four coherent visual directions: **Sage editorial**, **Ocean modern**, **Ember studio**, and **Midnight product**. In the generator, select **Design direction** or leave it automatic for the Website Plan provider to choose from the prompt. The same host-owned colors, type, spacing and hero composition apply to candidate rendering, Puck editing and device preview. Explicit selections also work with the local template fallback, which remains clearly labeled as non-AI.
+
+Optional `design.preset` metadata is preserved in canonical Schema v1, storage and JSON interchange. Old documents remain unchanged. Older application versions may reject styled documents; keep an exported JSON copy before downgrading. This stage is verified with synthetic generation and browser fixtures, not new live inference. See [design engine and verification](docs/generation-design-engine.md).
+
+The Rona Kopi reference adds an editorial coffee hero, replaceable menu photo slots, local SVG artwork and an accessible gallery carousel. It was saved and reloaded using a synthetic fixture. Its separate live OpenRouter attempt failed with HTTP 502; this is not evidence of live design quality. See [Rona implementation and acceptance](docs/rona-coffee-design-acceptance.md).
+
+### Generation completeness
+
+Choose **Standar kelengkapan** before generation: general website, café/restaurant, product catalog, services, portfolio or car rental. A local brief suggestion is available; explicit selection wins. Provider instructions describe the relevant structure while preserving exact requested counts/order and leaving unknown business facts empty.
+
+Candidate review shows available/missing sections separately from prices, contacts, opening hours and original images still to fill in. It updates after local candidate edits, flags missing CTA targets, and also reviews non-AI template fallback. Checks are advisory; drafts still require explicit Save. The checklist is structural, not a publication or factual-quality guarantee, and is not yet persisted as project metadata. See [completeness behavior, verification and limits](docs/generation-completeness.md).
+
 ## Using the editor
 
 1. Select a block in the canvas to edit its fields. On narrow screens, open **Fields**; **Blocks** and **Outline** are available in Puck's mobile toolbar.
@@ -100,18 +114,20 @@ Invalid required text or unsafe URLs show an error and pause canonical preview/s
 
 ## Supported editable blocks
 
-| Block     | Fields                                 |
-| --------- | -------------------------------------- |
-| Heading   | Text                                   |
-| Paragraph | Text                                   |
-| Button    | Label text, destination URL            |
-| Image     | Image URL, alternative text, caption   |
-| Hero      | Headline, subtitle, CTA label, CTA URL |
-| Section   | Title, body, light/sage/dark theme     |
-| Features / Services | Section title, grid/list, editable item titles and descriptions |
-| Contact | Title, body, email, phone and address; static information only |
+| Block               | Fields                                                                                 |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| Heading             | Text                                                                                   |
+| Paragraph           | Text                                                                                   |
+| Button              | Label text, destination URL                                                            |
+| Image               | Image URL, alternative text, caption                                                   |
+| Hero                | Headline, subtitle, CTA label, CTA URL, optional composition and photo                 |
+| Section             | Title, body, light/sage/dark theme                                                     |
+| Features / Services | Section title, grid/list, editable item titles and descriptions                        |
+| Menu / products     | Item names, descriptions, prices and optional photo URLs/alt                           |
+| Gallery             | Images, alternative text, captions, grid or carousel                                   |
+| Contact             | Title, body, email, phone, address and optional opening hours; static information only |
 
-Hero, Section, Features/Services and Contact remain standalone blocks, not nested page containers. Features contains a bounded item array. Gallery is composed from existing Image/Section blocks; a dedicated gallery/uploads block is deferred. Contact has no submission, booking or payment backend. Images use URLs, not uploads. A local sample SVG is included. URL inputs accept `http://`, `https://`, root-relative `/paths`, and `#anchors`; executable/data/protocol-relative URLs are rejected, including transient editor rendering.
+Hero, Section, Features/Services, Menu, Gallery and Contact remain standalone blocks, not nested page containers. Features, Menu and Gallery contain bounded item arrays. Carousel renders as a grid while editing so every item remains accessible. Contact has no submission, booking or payment backend. Images use URLs, not uploads. Local sample SVGs are included. URL inputs accept `http://`, `https://`, root-relative `/paths`, and `#anchors`; executable/data/protocol-relative URLs are rejected, including transient editor rendering.
 
 ## Architecture and data safety
 

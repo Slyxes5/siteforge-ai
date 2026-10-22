@@ -1,0 +1,62 @@
+.generator-completeness-field {
+  display: grid;
+  gap: 8px;
+  padding: 0 22px 18px;
+}
+.workspace.studio-workspace .generator-completeness-field label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+.workspace.studio-workspace .generator-completeness-field select {
+  width: 100%;
+  max-width: 320px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.generator-completeness-field .manager-help {
+  margin: 0;
+}
+.generation-completeness {
+  margin: 16px 0;
+  padding: 18px;
+  border: 1px solid #dce2ec;
+  border-radius: 10px;
+  background: #fafbfe;
+  color: #334155;
+  overflow-wrap: anywhere;
+}
+.generation-completeness h4,
+.generation-completeness h5 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.generation-completeness h5 {
+  margin-top: 18px;
+}
+.generation-completeness p,
+.generation-completeness li {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.generation-completeness ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+  padding-left: 20px;
+}
+.generation-completeness [data-completeness="present"] strong {
+  color: #17634e;
+}
+.generation-completeness [data-completeness="missing"] strong {
+  color: #92400e;
+}
+@media (max-width: 640px) {
+  .generator-completeness-field {
+    padding-inline: 16px;
+  }
+  .generation-completeness {
+    padding: 14px;
+  }
+}

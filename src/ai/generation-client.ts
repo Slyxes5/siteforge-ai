@@ -234,10 +234,10 @@ export async function generateWebsite(
   const relay = () => controller.abort(signal.reason);
   if (signal.aborted) relay();
   else signal.addEventListener("abort", relay, { once: true });
-  const requested = options.timeoutMs ?? GENERATION_LIMITS.totalTimeoutMs;
+  const requested = options.timeoutMs ?? GENERATION_LIMITS.clientTimeoutMs;
   const timeoutMs = Number.isFinite(requested)
-    ? Math.min(GENERATION_LIMITS.totalTimeoutMs, Math.max(1, requested))
-    : GENERATION_LIMITS.totalTimeoutMs;
+    ? Math.min(GENERATION_LIMITS.clientTimeoutMs, Math.max(1, requested))
+    : GENERATION_LIMITS.clientTimeoutMs;
   const timer = setTimeout(
     () =>
       controller.abort(new DOMException("Generation deadline", "TimeoutError")),

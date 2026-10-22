@@ -1,6 +1,11 @@
 import { z } from "zod";
+import { designPresetSchema } from "../project-schema/design";
+import { completenessProfileIds } from "./generation-standards";
 import type { Project } from "../project-schema/project";
-import type { GenerationDiagnostics } from "./generation-observation";
+import type {
+  GenerationDiagnostics,
+  ProviderTimings,
+} from "./generation-observation";
 import type { ModelRouting } from "./model-routing";
 export const GENERATION_PROMPT_VERSION = 2 as const;
 export const GENERATION_LIMITS = {
@@ -12,11 +17,19 @@ export const GENERATION_LIMITS = {
   requestBytes: 16384,
   timeoutMs: 45000,
   totalTimeoutMs: 90000,
+  // Covers the longest supported provider plus receipt delivery; not a provider deadline.
+  clientTimeoutMs: 130000,
   maxAttempts: 2,
+} as const;
+export const OPENROUTER_GENERATION_LIMITS = {
+  timeoutMs: 120000,
+  totalTimeoutMs: 125000,
 } as const;
 export const websiteGenerationRequestSchema = z.strictObject({
   name: z.string().trim().min(1).max(200),
   prompt: z.string().trim().min(1).max(GENERATION_LIMITS.promptCharacters),
+  designPreference: designPresetSchema.optional(),
+  completenessProfile: z.enum(completenessProfileIds).optional(),
 });
 export type WebsiteGenerationRequest = z.infer<
   typeof websiteGenerationRequestSchema
@@ -38,6 +51,8 @@ export interface WebsiteGenerationProvider {
       onTransportCall?: () => void;
       /** Numeric upstream HTTP status only; no headers, raw bodies or credentials. */
       onProviderStatus?: (status: number) => void;
+      /** Elapsed milliseconds only; never response text, headers or reasoning. */
+      onProviderTimings?: (timings: ProviderTimings) => void;
       onRoutingUpdate?: (routing: ModelRouting) => void;
     },
   ): Promise<{ text: string; model?: string }>;

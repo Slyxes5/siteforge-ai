@@ -1,8 +1,13 @@
 import { z } from "zod";
+import { OPENROUTER_GENERATION_LIMITS } from "../src/ai/website-generation";
 const settingsSchema = z.strictObject({
   model: z.literal("nvidia/nemotron-3.5-super-vl:free"),
   outputMode: z.enum(["prompt-json", "json-schema"]),
-  timeoutMs: z.number().int().min(1).max(45000),
+  timeoutMs: z
+    .number()
+    .int()
+    .min(1)
+    .max(OPENROUTER_GENERATION_LIMITS.timeoutMs),
 });
 /** Pure public settings parser. Never access a key, account, guardrail API or model discovery. */
 export function readOpenRouterSettings(
@@ -16,7 +21,10 @@ export function readOpenRouterSettings(
     model:
       env.SITEFORGE_OPENROUTER_MODEL ?? "nvidia/nemotron-3.5-super-vl:free",
     outputMode: env.SITEFORGE_OPENROUTER_OUTPUT_MODE ?? "prompt-json",
-    timeoutMs: Number(env.SITEFORGE_OPENROUTER_TIMEOUT_MS ?? "45000"),
+    timeoutMs: Number(
+      env.SITEFORGE_OPENROUTER_TIMEOUT_MS ??
+        OPENROUTER_GENERATION_LIMITS.timeoutMs,
+    ),
   });
   if (!parsed.success)
     throw new Error(

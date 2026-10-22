@@ -93,6 +93,23 @@ test("previews using safe before/after renderers and applies only the unsaved pr
   expect(localStorage.length).toBe(0);
 });
 
+test("single-block edits show only the changed row and keep actions before the diff", () => {
+  setup();
+  request();
+  fireEvent.click(button("Create mock proposal"));
+  const table = screen.getByRole("table", { name: /Operations diff/ });
+  expect(within(table).getAllByRole("row")).toHaveLength(2);
+  expect(table).toHaveTextContent("hero-heading");
+  expect(table).not.toHaveTextContent("hero-copy");
+  expect(
+    screen.getByRole("region", { name: "Edit proposal" }),
+  ).toHaveTextContent("1 affected block");
+  const actions = screen.getByRole("group", { name: "Proposal actions" });
+  expect(
+    actions.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+});
+
 test("rejects a proposal and preview without mutating or persisting the project", () => {
   const { props } = setup();
   const original = structuredClone(props.project);

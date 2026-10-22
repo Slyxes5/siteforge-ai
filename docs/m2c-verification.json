@@ -1,0 +1,473 @@
+{
+  "milestone": "M2C Advanced Website Generation",
+  "verificationMode": "mock-only",
+  "readyForReview": true,
+  "liveM2CGenerationVerified": false,
+  "liveActivationApproved": false,
+  "realGeminiRequests": 0,
+  "schemaVersion": 1,
+  "promptVersion": 2,
+  "supportedBlockTypes": [
+    "heading",
+    "paragraph",
+    "button",
+    "image",
+    "hero",
+    "section",
+    "features",
+    "contact"
+  ],
+  "limits": {
+    "generationBlocks": 12,
+    "outputTokens": 4096,
+    "featureItems": 6,
+    "featureTitleCharacters": 80,
+    "featureDescriptionCharacters": 240
+  },
+  "checks": {
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "bundleSafety": "passed",
+    "unit": {
+      "frontend": {
+        "numPassedTests": 112,
+        "numFailedTests": 0,
+        "success": true
+      },
+      "server": {
+        "numPassedTests": 132,
+        "numFailedTests": 0,
+        "success": true
+      }
+    },
+    "browser": {
+      "results.json": {
+        "startTime": "2026-10-19T16:38:16.888Z",
+        "duration": 42676.659,
+        "expected": 35,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "observability-results.json": {
+        "startTime": "2026-10-19T16:39:00.213Z",
+        "duration": 22271.822,
+        "expected": 18,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    "browserTotal": 53,
+    "focusedSingleRequest": {
+      "passed": 20,
+      "includedInServerTotal": true
+    },
+    "mockSmokeRunner": "passed"
+  },
+  "mockSmokeEvidence": "docs/smoke-observations/mock-124801b9-34aa-4780-844f-ba6db1327fc3.json",
+  "mockSmokeObservation": {
+    "phase": "terminal",
+    "startedAt": "2026-10-19T16:39:55.327Z",
+    "finishedAt": "2026-10-19T16:39:55.487Z",
+    "durationMs": 160,
+    "requestId": "20700138-2ed4-48fd-9246-65aa5086a24f",
+    "httpStatus": 200,
+    "generationPosts": 1,
+    "uiState": "success",
+    "schemaValidation": "valid",
+    "transportCalls": 1,
+    "blockCount": 2,
+    "candidatePreview": true,
+    "serverDurationMs": 19,
+    "problem": null
+  },
+  "storageUnchangedInSmoke": true,
+  "safeFaultFinishEvents": [
+    {
+      "event": "generation_finish",
+      "requestId": "b40a54be-0250-4286-854a-30135c4e5905",
+      "startedAt": "2026-10-19T16:39:05.155Z",
+      "finishedAt": "2026-10-19T16:39:05.247Z",
+      "durationMs": 91,
+      "outcome": "success",
+      "schemaValidation": "valid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 200,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "6102b2e8-ffb7-4333-9bbc-744ba867e2de",
+      "startedAt": "2026-10-19T16:39:06.036Z",
+      "finishedAt": "2026-10-19T16:39:06.039Z",
+      "durationMs": 3,
+      "outcome": "success",
+      "schemaValidation": "valid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 200,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "31b368be-d9d7-48e1-bc1b-e529cc1d19dd",
+      "startedAt": "2026-10-19T16:39:06.883Z",
+      "finishedAt": "2026-10-19T16:39:06.888Z",
+      "durationMs": 4,
+      "outcome": "success",
+      "schemaValidation": "valid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 200,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "128cfd93-a866-48f1-9dfa-75695c1ebbab",
+      "startedAt": "2026-10-19T16:39:09.425Z",
+      "finishedAt": "2026-10-19T16:39:09.428Z",
+      "durationMs": 3,
+      "outcome": "provider_error",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "providerStatus": 429,
+      "problem": {
+        "stage": "provider_transport",
+        "reason": "HTTP_ERROR"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "dc69a265-b33f-4fd0-8927-033c59cf824d",
+      "startedAt": "2026-10-19T16:39:10.238Z",
+      "finishedAt": "2026-10-19T16:39:10.240Z",
+      "durationMs": 1,
+      "outcome": "provider_error",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "providerStatus": 500,
+      "problem": {
+        "stage": "provider_transport",
+        "reason": "HTTP_ERROR"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "e29cb580-16f4-4966-9f80-8a5748bf6c56",
+      "startedAt": "2026-10-19T16:39:11.176Z",
+      "finishedAt": "2026-10-19T16:39:11.178Z",
+      "durationMs": 2,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "provider_envelope",
+        "reason": "MALFORMED_ENVELOPE_JSON"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "76accef1-6999-4f06-9878-80fdee97f3b8",
+      "startedAt": "2026-10-19T16:39:11.819Z",
+      "finishedAt": "2026-10-19T16:39:11.825Z",
+      "durationMs": 5,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "structured_output",
+        "reason": "STRUCTURED_CONTENT_REJECTED",
+        "issues": [
+          {
+            "code": "invalid_union",
+            "path": "blocks[0].type"
+          }
+        ]
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "1213a9e4-9d88-4c41-857e-847cddcd9d8d",
+      "startedAt": "2026-10-19T16:39:12.737Z",
+      "finishedAt": "2026-10-19T16:39:13.946Z",
+      "durationMs": 1208,
+      "outcome": "timeout",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 504,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "f907df29-b9c6-4761-921d-ea2da4701c7b",
+      "startedAt": "2026-10-19T16:39:14.836Z",
+      "finishedAt": "2026-10-19T16:39:16.038Z",
+      "durationMs": 1201,
+      "outcome": "timeout",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 504,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "e2c6e88a-0086-42ac-be18-af6ac1359bb5",
+      "startedAt": "2026-10-19T16:39:16.807Z",
+      "finishedAt": "2026-10-19T16:39:16.808Z",
+      "durationMs": 1,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "provider_envelope",
+        "reason": "EMPTY_RESPONSE"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "df39331a-11f2-44a2-9ce9-eb4b47554d89",
+      "startedAt": "2026-10-19T16:39:17.516Z",
+      "finishedAt": "2026-10-19T16:39:17.518Z",
+      "durationMs": 1,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "provider_envelope",
+        "reason": "OUTPUT_TRUNCATED"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "426b138a-566f-4f0b-aadb-49bad4a08990",
+      "startedAt": "2026-10-19T16:39:18.197Z",
+      "finishedAt": "2026-10-19T16:39:18.199Z",
+      "durationMs": 1,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "provider_envelope",
+        "reason": "PROVIDER_REFUSAL"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "b8477227-f3ff-4053-85ed-2659964d1ea5",
+      "startedAt": "2026-10-19T16:39:18.860Z",
+      "finishedAt": "2026-10-19T16:39:18.862Z",
+      "durationMs": 2,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "content_json",
+        "reason": "MALFORMED_CONTENT_JSON"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "0771ff6c-68c6-48fd-88f1-b72f458c36fa",
+      "startedAt": "2026-10-19T16:39:19.550Z",
+      "finishedAt": "2026-10-19T16:39:19.553Z",
+      "durationMs": 2,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "structured_output",
+        "reason": "STRUCTURED_CONTENT_REJECTED",
+        "issues": [
+          {
+            "code": "invalid_type",
+            "path": "blocks[0].text"
+          },
+          {
+            "code": "unrecognized_keys",
+            "path": "blocks[0]"
+          }
+        ]
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "209f8ca2-7cd2-43e1-9007-f2cae786437d",
+      "startedAt": "2026-10-19T16:39:20.273Z",
+      "finishedAt": "2026-10-19T16:39:20.279Z",
+      "durationMs": 5,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "problem": {
+        "stage": "content_semantics",
+        "reason": "UNSUPPORTED_BUSINESS_FACT"
+      },
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "0090f6f0-7a6a-4a91-9a39-c90d67371146",
+      "startedAt": "2026-10-19T16:39:20.989Z",
+      "finishedAt": "2026-10-19T16:39:21.126Z",
+      "durationMs": 136,
+      "outcome": "cancelled",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 499,
+      "delivery": "disconnected"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "5d1dcb2e-d299-4571-8ec8-c0e8f881aa1e",
+      "startedAt": "2026-10-19T16:39:21.806Z",
+      "finishedAt": "2026-10-19T16:39:21.889Z",
+      "durationMs": 83,
+      "outcome": "cancelled",
+      "schemaValidation": "valid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 200,
+      "delivery": "disconnected"
+    }
+  ],
+  "eventCounts": {
+    "starts": 17,
+    "finishes": 17,
+    "exactlyOnce": true
+  },
+  "unchangedSafetyFiles": {
+    "server/smoke-startup.ts": true,
+    "server/smoke-start.ts": true,
+    "server/smoke-startup.test.ts": true,
+    "package.json": true,
+    "package-lock.json": true
+  },
+  "testPortsReachableAfterCleanup": {
+    "5188": false,
+    "5189": false
+  },
+  "screenshots": {
+    "edited-project": "docs/screenshots/m2c-edited-project.png",
+    "rental-mobile": "docs/screenshots/m2c-rental-mobile.png",
+    "unsupported-fact": "docs/screenshots/m2c-unsupported-fact.png"
+  },
+  "sourceCheckpoints": [
+    ".milestones/m2b-before-m2c",
+    ".milestones/m2c-before-completion"
+  ],
+  "changedOrNewSourceFiles": [
+    "src/styles.css",
+    "src/ai/advanced-generation.test.ts",
+    "src/ai/generation-client.test.ts",
+    "src/ai/generation-client.ts",
+    "src/ai/generation-content.test.ts",
+    "src/ai/generation-content.ts",
+    "src/ai/generation-grounding.test.ts",
+    "src/ai/generation-grounding.ts",
+    "src/ai/generation-validation.test.ts",
+    "src/ai/generation-validation.ts",
+    "src/ai/website-generation.ts",
+    "src/app/App.test.tsx",
+    "src/app/App.tsx",
+    "src/app/candidate-isolation.test.tsx",
+    "src/app/CandidateEditor.test.tsx",
+    "src/app/CandidateEditor.tsx",
+    "src/app/WebsiteGenerator.tsx",
+    "src/editor/puck-config.tsx",
+    "src/editor/VisualEditor.tsx",
+    "src/generator/car-rental.test.ts",
+    "src/generator/templates.test.ts",
+    "src/generator/templates.ts",
+    "src/project-schema/m2c-schema.test.ts",
+    "src/project-schema/project.ts",
+    "src/renderer/m2c-renderer.test.tsx",
+    "server/gemini-provider.ts",
+    "server/generation-prompt.test.ts",
+    "server/generation-prompt.ts",
+    "server/mock-provider.test.ts",
+    "server/mock-provider.ts",
+    "server/observability-fixture.ts",
+    "e2e/m2c.spec.ts",
+    "e2e/observability.spec.ts"
+  ],
+  "sourceBuildFingerprints": {
+    "dist/index.html": "e50108ad5a5493704b31b0caecc1022aa339a40e5f2d530bcb0269f999a69fb6",
+    "e2e/generation-observer.ts": "cbc3ea4dd48612dd47ad0914df79dde359326f8b84b702576be0fd0a14abf1f8",
+    "e2e/m2c.spec.ts": "258be64179290573f33f18ebe7eff8becb7904b00b20b2e74d0d72f2d271a2ed",
+    "e2e/observability.spec.ts": "e080f8a4d0f4676a1c07e0abb06396b18f20505f51485f82f3506eca7d84e65a",
+    "e2e/smoke-workflow.spec.ts": "4bf6d7588fe4d27911503b267a03caeed7c394d74ee867798076295c6b1d32b8",
+    "package-lock.json": "520b5ed093f64676107f3f92adcbb93bb827ecd96f16e0ff089212cc750d04ae",
+    "package.json": "1994de0b2e1cbd3f48c13bfceacf8169889852c8f65f98779001a1bfd3053795",
+    "playwright.smoke.config.ts": "980e994a52b4af96574f574504da24adf1ee7560fbb4bf0ff243430c7c29afa9",
+    "scripts/run-smoke-observer.ts": "d9464e1f1c46dab6de692d2549501c80a8afc361c03e3267ac71681fe3fcb26d",
+    "server/gemini-provider.ts": "1566f04206b9fa0db54c199575c8c9fa84c6188ebae155b2d1bde154c86d9497",
+    "server/generation-prompt.test.ts": "b5acafbf4f58f8921f808c4d7351377c115d480d30ef866213c756d969357206",
+    "server/generation-prompt.ts": "5306b22a58d2483d8920c928f60e906286b0736da043a3b830b16b2479dc5381",
+    "server/generation-server.ts": "8e377f3583fbd5747b0b386b842a67c4cb2111c4a9b288e571e8bb8b55f6d2c6",
+    "server/mock-provider.test.ts": "1b012fbaa76a1ef57add241312fb22f876f4270aacd447181f9e97ca9e4c000c",
+    "server/mock-provider.ts": "afb03e69f4ce79593ea4bb2d1afd4d2a4d35fab8a90b5066c7c5ec3972d845fe",
+    "server/observability-fixture.ts": "9c192dccda4dcf6d46f62a0833cea2834a54606e6226cd8c8d249ceade114609",
+    "server/smoke-start.ts": "607417f02ef8d92800cba94f595f8eab76e9788b4431abf9e0ee09dd3a3f8e9d",
+    "server/smoke-startup.test.ts": "644879160bb1c9f5b352ba6305b12980004bb37cc29b9dbc9628bf4b89d7d191",
+    "server/smoke-startup.ts": "a359e605e55b3b92536dd257f7c6559262bc13c22b1d6b00566215cd239f25f7",
+    "src/ai/advanced-generation.test.ts": "2c355b36e4b9e8ed2cd60833397a6221011ceb214df684e281c33d7e8aba32fc",
+    "src/ai/generation-client.test.ts": "732afcb11020fef939bd1849095937534e6aff965f3b3d3013db9c4c8b034976",
+    "src/ai/generation-client.ts": "46c045c805f77fb47cc3dbb589bd64f9e91ad80b321ea57ae6c60edab5b2fe6a",
+    "src/ai/generation-content.test.ts": "e0982e11c9e23c8ca62398b7d7da546d90a6dfc88fa3d4657880b9177c65e45f",
+    "src/ai/generation-content.ts": "8db8dc5261cd4cf52af3834926ea8d2dc7309756872172714faa7043f0a1b309",
+    "src/ai/generation-grounding.test.ts": "e8b121bd74a7b81cb6529f5f069a9a7a1bb1fb410a6b3d8b7b4e369a2e8207c1",
+    "src/ai/generation-grounding.ts": "8d8a5da246ae8bca5e4bb8061122ef64fceb86f40b8ccbe6d78f7996a35498e2",
+    "src/ai/generation-validation.test.ts": "c6e28e2344a58d7f5e117b001c3dcec62b6be6e016f68c8fd1a20349377096ef",
+    "src/ai/generation-validation.ts": "85fd27b4e149409b23dcfb02e6c97e7d7cea479e91a67a3995753c84c1356390",
+    "src/ai/website-generation.ts": "a5889fb46279b7e75757ffd06a67bd0baf8cc4e2928233fb446da78f4c24d438",
+    "src/app/App.test.tsx": "a05443a8acc07b2eafe516f6bdb4158b7d174c931f4b7af7cd92c337e0e09677",
+    "src/app/App.tsx": "3a662f7a8799fc02599d1ec7d4f798621c2ea4f0121791585174b28a79b09d86",
+    "src/app/CandidateEditor.test.tsx": "9dd5b0c861d7a8f095b9271154ddb0e99260b0ccc87b2ee1e988b537e2cf583f",
+    "src/app/CandidateEditor.tsx": "dd2fca6833cbe232337bbc29f336183330bd3ac0101ba6fbd7a62aa5b812d8ca",
+    "src/app/WebsiteGenerator.tsx": "df049412df28a6804aafbc68961fbb8c1431f7f1e251f750f52e3631efa57e67",
+    "src/app/candidate-isolation.test.tsx": "b7b43cf00f49900dc6ebb7668635b14522d2cd8a21ebda6b70d7715dfeba7b31",
+    "src/editor/VisualEditor.tsx": "d7f320e78319bf14327fc9cab3c9a0406fa84ffe3ef81ebf6b2a77728d53afbf",
+    "src/editor/puck-config.tsx": "a1dac1cbc57a16fae77dc2a76c045e68474c1e79be1dec7d908f86c646efc2f9",
+    "src/generator/car-rental.test.ts": "94f67b62ca35378e2dc887c600a94d858e67c4a7ccf6100155cd60a15a34eddf",
+    "src/generator/templates.test.ts": "9a3e3dffa1ee7113793940e3f8d74e8f95ce3c77f898e962d92713d731e14248",
+    "src/generator/templates.ts": "7ae39f4180c94a65b4da1a4a4a4ae69a4cc9d42201ce1b3b5e292e2505391273",
+    "src/project-schema/m2c-schema.test.ts": "c73dbf20c41aa561c021c518cabbba438c186cabb8977cdef8182a28eb1aadac",
+    "src/project-schema/project.ts": "442e454f80abd274e77d846dffb3a0b360a5a59721b26233667574db3c162947",
+    "src/renderer/m2c-renderer.test.tsx": "fd6d0fa74161272634861f2fbbd001b77acf644a6a2d7363213024945bebb97a",
+    "src/styles.css": "35d4604a2a4328c3929fc7f7f3dc07ed4991fd7161397b3538ab1f172f062987"
+  }
+}

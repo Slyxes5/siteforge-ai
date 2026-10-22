@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { projectSchema } from "../project-schema/project";
 import { structuredEditResponseSchema } from "./structured-edit";
+import { OPENROUTER_EDIT_MODEL, liveEditSourceSchema } from "./edit-source";
 
 /** HTTP limits are independent of website generation; no project identity crosses this boundary. */
 export const EDIT_LIMITS = {
@@ -38,11 +39,24 @@ export const editStatusSchema = z.discriminatedUnion("mode", [
     provider: z.literal("synthetic"),
     sessionToken,
   }),
+  z.strictObject({
+    mode: z.literal("live"),
+    provider: z.literal("openrouter"),
+    model: z.literal(OPENROUTER_EDIT_MODEL),
+    sessionToken,
+  }),
 ]);
 /** Operations remain untrusted: the frontend must still bind and validate its full starting draft. */
-export const editResultSchema = z.strictObject({
-  mode: z.literal("mock"),
-  response: structuredEditResponseSchema,
-});
+export const editResultSchema = z.discriminatedUnion("mode", [
+  z.strictObject({
+    mode: z.literal("mock"),
+    response: structuredEditResponseSchema,
+  }),
+  z.strictObject({
+    mode: z.literal("live"),
+    source: liveEditSourceSchema,
+    response: structuredEditResponseSchema,
+  }),
+]);
 export type EditRequest = z.infer<typeof editRequestSchema>;
 export type EditResult = z.infer<typeof editResultSchema>;

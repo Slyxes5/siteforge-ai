@@ -15,6 +15,41 @@ export const generationOutcomeSchema = z.enum([
   "cancelled",
 ]);
 export type GenerationOutcome = z.infer<typeof generationOutcomeSchema>;
+/** Cumulative elapsed times from provider invocation; missing stages were not reached. */
+export const providerTimingsSchema = z
+  .strictObject({
+    headersMs: z.number().int().nonnegative(),
+    firstByteMs: z.number().int().nonnegative().optional(),
+    bodyCompleteMs: z.number().int().nonnegative().optional(),
+    responseCompleteMs: z.number().int().nonnegative().optional(),
+  })
+  .superRefine((value, ctx) => {
+    const stages = [
+      value.headersMs,
+      value.firstByteMs,
+      value.bodyCompleteMs,
+      value.responseCompleteMs,
+    ];
+    let previous = 0;
+    for (const stage of stages) {
+      if (stage === undefined) continue;
+      if (stage < previous)
+        ctx.addIssue({
+          code: "custom",
+          message: "Invalid provider timing order",
+        });
+      previous = stage;
+    }
+    if (
+      value.responseCompleteMs !== undefined &&
+      value.bodyCompleteMs === undefined
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: "Missing body completion timing",
+      });
+  });
+export type ProviderTimings = z.infer<typeof providerTimingsSchema>;
 /** Allowlisted metadata only; transport calls do not establish provider acceptance or billing. */
 export const generationDiagnosticsSchema = z
   .strictObject({
@@ -28,6 +63,7 @@ export const generationDiagnosticsSchema = z
     transportCalls: z.number().int().min(0).max(2),
     httpStatus: z.number().int().min(100).max(599),
     providerStatus: z.number().int().min(100).max(599).optional(),
+    providerTimings: providerTimingsSchema.optional(),
     providerErrorCategory: providerHttpCategorySchema.optional(),
     providerRetryable: z.boolean().optional(),
     providerRpcStatus: providerRpcStatusSchema.optional(),

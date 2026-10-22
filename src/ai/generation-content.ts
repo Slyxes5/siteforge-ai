@@ -5,6 +5,8 @@ import {
   parseGenerationBoundary,
 } from "./generation-validation";
 import { projectSchema, type Project } from "../project-schema/project";
+import { generationImageSources } from "../project-schema/visual-assets";
+const generatedImage = z.enum(generationImageSources);
 import {
   GENERATION_LIMITS,
   GENERATION_PROMPT_VERSION,
@@ -45,7 +47,7 @@ const generatedBlockSchema = z.discriminatedUnion("type", [
     type: z.literal("image"),
     text: optional,
     alt: optional,
-    src: z.literal("/sample-landscape.svg"),
+    src: generatedImage,
   }),
   z.strictObject({
     id,
@@ -54,6 +56,9 @@ const generatedBlockSchema = z.discriminatedUnion("type", [
     subtitle: optional,
     ctaText: optional,
     ctaHref: anchor,
+    visual: z.enum(["plain", "coffee-editorial"]).optional(),
+    imageSrc: generatedImage.optional(),
+    imageAlt: optional.optional(),
   }),
   z.strictObject({
     id,
@@ -109,6 +114,46 @@ const generatedBlockSchema = z.discriminatedUnion("type", [
       .describe(
         "Copy the supplied address exactly, or empty string if not supplied.",
       ),
+    openingHours: z
+      .string()
+      .max(500)
+      .default("")
+      .describe(
+        "Copy supplied opening hours exactly, or use an empty string when not supplied.",
+      ),
+  }),
+  z.strictObject({
+    id,
+    type: z.literal("menu"),
+    text,
+    items: z
+      .array(
+        z.strictObject({
+          title: z.string().min(1).max(80),
+          description: z.string().max(240),
+          price: z.string().max(80),
+          imageSrc: generatedImage.optional(),
+          imageAlt: optional.optional(),
+        }),
+      )
+      .min(1)
+      .max(6),
+  }),
+  z.strictObject({
+    id,
+    type: z.literal("gallery"),
+    text,
+    layout: z.enum(["grid", "carousel"]).optional(),
+    items: z
+      .array(
+        z.strictObject({
+          src: generatedImage,
+          alt: optional,
+          caption: optional,
+        }),
+      )
+      .min(1)
+      .max(6),
   }),
 ]);
 export const generatedContentSchema = z.strictObject({
@@ -119,6 +164,20 @@ const { $schema: _meta, ...jsonSchema } = z.toJSONSchema(
   generatedContentSchema,
   {
     override: ({ jsonSchema }) => {
+      // Preserve the legacy M2C provider projection. New visual capabilities are
+      // requested via Website Plan styles; do not widen or break Gemini's old wire contract.
+      if (jsonSchema.type === "object" && jsonSchema.properties) {
+        const properties = jsonSchema.properties;
+        delete properties.visual;
+        delete properties.imageSrc;
+        delete properties.imageAlt;
+        const type = properties.type as
+          { const?: string; enum?: string[] } | undefined;
+        if (type?.const === "gallery" || type?.enum?.includes("gallery"))
+          delete properties.layout;
+        if (properties.src)
+          properties.src = { type: "string", enum: ["/sample-landscape.svg"] };
+      }
       // Use the documented responseJsonSchema subset; never relax the local Zod validator.
       if (jsonSchema.const !== undefined) {
         jsonSchema.enum = [jsonSchema.const];
@@ -127,6 +186,7 @@ const { $schema: _meta, ...jsonSchema } = z.toJSONSchema(
       delete jsonSchema.pattern;
       delete jsonSchema.minLength;
       delete jsonSchema.maxLength;
+      delete jsonSchema.default;
       // Disjoint `type` enums make anyOf equivalent.
       if (jsonSchema.oneOf) {
         jsonSchema.anyOf = jsonSchema.oneOf;
@@ -143,6 +203,13 @@ export function validateGenerationCandidate(
 ): Project {
   const project = projectSchema.parse(value);
   if (
+    input?.designPreference &&
+    project.design?.preset !== input.designPreference
+  )
+    throw new Error(
+      "Candidate did not preserve the requested design direction",
+    );
+  if (
     project.revision !== 0 ||
     project.generation?.kind !== "ai" ||
     project.blocks.length < 1 ||
@@ -152,7 +219,9 @@ export function validateGenerationCandidate(
   const sections = new Set(
     project.blocks
       .filter((block) =>
-        ["section", "features", "contact"].includes(block.type),
+        ["section", "features", "contact", "menu", "gallery"].includes(
+          block.type,
+        ),
       )
       .map((block) => block.id),
   );
@@ -168,7 +237,21 @@ export function validateGenerationCandidate(
       )
     )
       throw new Error("Candidate text too long");
-    if (block.type === "image" && block.src !== "/sample-landscape.svg")
+    if (
+      (block.type === "image" &&
+        !generatedImage.safeParse(block.src).success) ||
+      (block.type === "hero" &&
+        block.imageSrc !== undefined &&
+        !generatedImage.safeParse(block.imageSrc).success) ||
+      (block.type === "menu" &&
+        block.items.some(
+          (item) =>
+            item.imageSrc !== undefined &&
+            !generatedImage.safeParse(item.imageSrc).success,
+        )) ||
+      (block.type === "gallery" &&
+        block.items.some((item) => !generatedImage.safeParse(item.src).success))
+    )
       throw new Error("External candidate images are not allowed");
     const url =
       block.type === "button"
@@ -238,7 +321,9 @@ export function buildCandidate(
   const sections = new Set(
     content.blocks
       .filter((block) =>
-        ["section", "features", "contact"].includes(block.type),
+        ["section", "features", "contact", "menu", "gallery"].includes(
+          block.type,
+        ),
       )
       .map((block) => block.id),
   );
@@ -266,6 +351,9 @@ export function buildCandidate(
       id: projectId,
       name: request.name,
       description: request.prompt,
+      ...(request.designPreference
+        ? { design: { preset: request.designPreference } }
+        : {}),
       revision: 0,
       generation: {
         kind: "ai",

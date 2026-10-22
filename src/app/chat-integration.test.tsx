@@ -2,6 +2,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { App } from "./App";
 import { sampleProject } from "../project-schema/project";
+vi.mock("../styles.css?inline", () => ({ default: "" }));
 
 vi.mock("../editor/VisualEditor", () => ({
   default: () => <div>Visual editor boundary</div>,
@@ -68,11 +69,23 @@ it("only Apply changes draft; only explicit Save persists and increments revisio
   );
   expect(localStorage.getItem(key)).toBe(JSON.stringify(sampleProject));
   fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+  const frame = screen.getByTitle<HTMLIFrameElement>("Website device preview");
+  fireEvent.load(frame);
+  for (const name of ["Mobile", "Tablet", "Desktop"]) {
+    fireEvent.click(screen.getByRole("button", { name }));
+    expect(screen.getByRole("button", { name })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(localStorage.getItem(key)).toBe(JSON.stringify(sampleProject));
+    expect(document.querySelector(".save-status")).toHaveTextContent(
+      "Unsaved changes",
+    );
+  }
   expect(
-    within(screen.getByRole("region", { name: "Website preview" })).getByRole(
-      "heading",
-      { name: "A thoughtful new headline" },
-    ),
+    within(frame.contentDocument!.body).getByRole("heading", {
+      name: "A thoughtful new headline",
+    }),
   ).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Save project" }));
   const stored = JSON.parse(localStorage.getItem(key)!);

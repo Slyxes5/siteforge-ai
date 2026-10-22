@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { readModelRouterConfig } from "./model-router-config";
+import { GEMINI_GENERATION_MODEL_ORDER } from "./gemini-generation-profile";
 const env = {
   SITEFORGE_AI_ROUTER_ENABLED: "true",
   SITEFORGE_GEMINI_MODEL: "gemini-3.5-flash-lite",
@@ -60,4 +61,33 @@ test("backend opt-in reads a verified model list with bounded defaults without c
     attemptTimeoutMs: 30000,
     totalTimeoutMs: 60000,
   });
+});
+
+test("opt-in router defaults to user-selected 3.8 then 3.5 and still requires verified eligibility", () => {
+  const configured: NodeJS.ProcessEnv = {
+    SITEFORGE_AI_ROUTER_ENABLED: "true",
+    SITEFORGE_AI_VERIFIED_MODELS: JSON.stringify(GEMINI_GENERATION_MODEL_ORDER),
+    SITEFORGE_AI_FREE_TIER_CONFIRMED: "true",
+  };
+  expect(readModelRouterConfig(configured)?.models).toEqual(
+    GEMINI_GENERATION_MODEL_ORDER,
+  );
+  expect(
+    readModelRouterConfig({
+      ...configured,
+      SITEFORGE_GEMINI_MODEL: "gemini-3.5-flash-lite",
+    })?.models,
+  ).toEqual(["gemini-3.5-flash-lite"]);
+  expect(() =>
+    readModelRouterConfig({
+      ...configured,
+      SITEFORGE_AI_VERIFIED_MODELS: undefined,
+    }),
+  ).toThrow();
+  expect(
+    readModelRouterConfig({
+      ...configured,
+      SITEFORGE_AI_ROUTER_ENABLED: undefined,
+    }),
+  ).toBeUndefined();
 });

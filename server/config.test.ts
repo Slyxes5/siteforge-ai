@@ -57,6 +57,7 @@ test("explicit verified backend routing configuration composes real adapters wit
     SITEFORGE_AI_PROVIDER: "gemini",
     SITEFORGE_AI_ALLOW_LIVE: "true",
     SITEFORGE_GEMINI_API_KEY: "synthetic-only",
+    SITEFORGE_GEMINI_MODEL: models[0],
     SITEFORGE_AI_ROUTER_ENABLED: "true",
     SITEFORGE_AI_FREE_TIER_CONFIRMED: "true",
     SITEFORGE_AI_FALLBACK_MODELS: JSON.stringify(models.slice(1)),

@@ -203,7 +203,7 @@ test("a pre-aborted call does not reach the transport", async () => {
   expect(budget.outboundRequests()).toBe(0);
 });
 
-for (const mode of ["disabled", "mock"])
+for (const mode of ["disabled", "mock", "mock-routed"])
   test(
     "actual CLI starts on loopback in " +
       mode +
@@ -232,7 +232,7 @@ for (const mode of ["disabled", "mock"])
               if(url.protocol!=='http:' || url.hostname!=='127.0.0.1')throw new Error('External fetch blocked in CLI tests');
               return nativeFetch(input,init);
             };
-            process.argv=[process.execPath,'server/smoke-start.ts',...${JSON.stringify(mode === "mock" ? ["--mock"] : [])}];
+            process.argv=[process.execPath,'server/smoke-start.ts',...${JSON.stringify(mode === "disabled" ? [] : ["--" + mode])}];
             await import('./server/smoke-start.ts');
             if(process.env.SITEFORGE_GEMINI_API_KEY!==undefined)throw new Error('Non-live child retained its credential environment');
             console.log('credential-env-cleared');
@@ -259,7 +259,9 @@ for (const mode of ["disabled", "mock"])
         child.stdout!.on("data", (chunk) => {
           output += String(chunk);
           if (
-            output.includes("mode=" + mode) &&
+            output.includes(
+              "mode=" + (mode === "disabled" ? "disabled" : "mock"),
+            ) &&
             output.includes("credential-env-cleared")
           )
             resolve();
@@ -270,11 +272,14 @@ for (const mode of ["disabled", "mock"])
         );
       });
       expect(output).toContain("maxAttempts=1");
+      expect(output).toContain(
+        "outboundLimit=" + (mode === "mock-routed" ? 2 : 1),
+      );
       expect(output).not.toContain("synthetic-child-only");
       const status = await (
         await fetch("http://127.0.0.1:" + port + "/api/generation/status")
       ).json();
-      expect(status.mode).toBe(mode);
+      expect(status.mode).toBe(mode === "disabled" ? "disabled" : "mock");
       const response = await fetch(
         "http://127.0.0.1:" + port + "/api/generate",
         {
@@ -290,14 +295,19 @@ for (const mode of ["disabled", "mock"])
           }),
         },
       );
-      expect(response.status).toBe(mode === "mock" ? 200 : 503);
-      if (mode === "mock") {
+      expect(response.status).toBe(mode === "disabled" ? 503 : 200);
+      if (mode !== "disabled") {
         const data = await response.json();
         expect(data.candidate.generation).toMatchObject({
           provider: "mock",
           mode: "mock",
         });
         expect(data.candidate.blocks).toHaveLength(2);
+        if (mode === "mock-routed") {
+          expect(status.model).toBe("gemini-3.8-flash");
+          expect(data.candidate.generation.model).toBe("gemini-3.5-flash-lite");
+          expect(data.diagnostics.transportCalls).toBe(2);
+        }
       }
     },
   );

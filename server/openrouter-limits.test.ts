@@ -48,6 +48,6 @@ test("options cannot widen the fixed response/deadline resource ceilings", () =>
     }),
   ).toThrow();
   expect(() =>
-    createOpenRouterProvider({ apiKey: "synthetic-only", timeoutMs: 90001 }),
+    createOpenRouterProvider({ apiKey: "synthetic-only", timeoutMs: 120001 }),
   ).toThrow();
 });

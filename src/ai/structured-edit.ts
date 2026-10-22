@@ -6,6 +6,7 @@ import {
 } from "../project-schema/project";
 import { createEditProposal, type EditProposal } from "./edit-proposal";
 import { abortableGeneration, abortFailure } from "./generation-runtime";
+import { liveEditSourceSchema, type LiveEditSource } from "./edit-source";
 
 const generatedBlockSchema = z.discriminatedUnion("type", [
   blockSchema.options[0].omit({ id: true }),
@@ -16,6 +17,8 @@ const generatedBlockSchema = z.discriminatedUnion("type", [
   blockSchema.options[5].omit({ id: true }),
   blockSchema.options[6].omit({ id: true }),
   blockSchema.options[7].omit({ id: true }),
+  blockSchema.options[8].omit({ id: true }),
+  blockSchema.options[9].omit({ id: true }),
 ]);
 const editable = new Set([
   "text",
@@ -26,6 +29,7 @@ const editable = new Set([
   "email",
   "phone",
   "address",
+  "openingHours",
   "href",
   "ctaHref",
   "src",
@@ -83,6 +87,7 @@ export type EditProviderRequest = Readonly<{
 }>;
 export interface StructuredEditProvider {
   readonly id: string;
+  readonly source?: LiveEditSource;
   /** Raw untrusted JSON; the host alone validates and creates proposal metadata. */
   propose(request: EditProviderRequest, signal: AbortSignal): Promise<string>;
 }
@@ -114,6 +119,11 @@ export async function createStructuredEditProposal(
   timeoutMs: number = LIMITS.timeoutMs,
 ): Promise<EditProposal> {
   const project = projectSchema.parse(base);
+  let source: LiveEditSource | undefined;
+  if (provider.id === "openrouter-edit")
+    source = liveEditSourceSchema.parse(provider.source);
+  else if (provider.source !== undefined)
+    throw new Error("Invalid edit provider source.");
   if (
     typeof instruction !== "string" ||
     !instruction.trim() ||
@@ -171,7 +181,12 @@ export async function createStructuredEditProposal(
       used.add(id);
       return { ...operation, block: { ...operation.block, id } };
     });
-    const proposal = createEditProposal(project, instruction, operations);
+    const proposal = createEditProposal(
+      project,
+      instruction,
+      operations,
+      source,
+    );
     assertActive();
     return proposal;
   } finally {

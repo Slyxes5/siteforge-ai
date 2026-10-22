@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { GEMINI_MODEL_CATALOG } from "./gemini-model-catalog";
+import { GEMINI_GENERATION_MODEL_ORDER } from "./gemini-generation-profile";
 const model = z
   .string()
   .refine((id) => Object.hasOwn(GEMINI_MODEL_CATALOG, id));
@@ -30,15 +31,19 @@ export function readModelRouterConfig(
 ): ModelRouterConfig | undefined {
   if (env.SITEFORGE_AI_ROUTER_ENABLED !== "true") return undefined;
   try {
+    const primaryModel =
+      env.SITEFORGE_GEMINI_MODEL ?? GEMINI_GENERATION_MODEL_ORDER[0];
     const fallbacks: unknown = JSON.parse(
-      env.SITEFORGE_AI_FALLBACK_MODELS ?? "[]",
+      env.SITEFORGE_AI_FALLBACK_MODELS ??
+        JSON.stringify(
+          GEMINI_GENERATION_MODEL_ORDER.slice(1).filter(
+            (model) => model !== primaryModel,
+          ),
+        ),
     );
     if (!Array.isArray(fallbacks)) throw new Error();
     return modelRouterConfigSchema.parse({
-      models: [
-        env.SITEFORGE_GEMINI_MODEL ?? "gemini-3.5-flash-lite",
-        ...fallbacks,
-      ],
+      models: [primaryModel, ...fallbacks],
       verifiedModels: JSON.parse(env.SITEFORGE_AI_VERIFIED_MODELS ?? "[]"),
       freeTierConfirmed: env.SITEFORGE_AI_FREE_TIER_CONFIRMED === "true",
       maxAttempts: Number(env.SITEFORGE_AI_ROUTER_MAX_ATTEMPTS ?? "2"),

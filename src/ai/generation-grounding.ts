@@ -6,9 +6,11 @@ const visibleFields = [
   "ctaText",
   "body",
   "alt",
+  "imageAlt",
   "email",
   "phone",
   "address",
+  "openingHours",
 ] as const;
 // Longest fact forms first: currency/phone context must not dissolve into bare numbers.
 const factPattern =
@@ -63,8 +65,25 @@ export function assertGroundedContent(
           inspect(item as Record<string, unknown>, ["title", "description"]);
       }
     }
+    if (block.type === "menu" && Array.isArray(block.items)) {
+      for (const item of block.items) {
+        if (item && typeof item === "object")
+          inspect(item as Record<string, unknown>, [
+            "title",
+            "description",
+            "price",
+            "imageAlt",
+          ]);
+      }
+    }
+    if (block.type === "gallery" && Array.isArray(block.items)) {
+      for (const item of block.items) {
+        if (item && typeof item === "object")
+          inspect(item as Record<string, unknown>, ["alt", "caption"]);
+      }
+    }
     if (block.type === "contact") {
-      for (const key of ["email", "phone", "address"]) {
+      for (const key of ["email", "phone", "address", "openingHours"]) {
         const field = block[key];
         if (
           typeof field === "string" &&

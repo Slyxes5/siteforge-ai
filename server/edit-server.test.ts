@@ -193,7 +193,7 @@ test("elapsed edit deadlines take precedence over a synchronous late provider fa
   expect(signal.aborted).toBe(true);
 });
 
-test("Stage 1 refuses a live-labelled backend edit provider at runtime", () => {
+test("backend refuses an unsupported or unidentified edit provider at runtime", () => {
   const editProvider = {
     id: "openrouter",
     propose: vi.fn(async () => JSON.stringify(payload)),
@@ -204,7 +204,7 @@ test("Stage 1 refuses a live-labelled backend edit provider at runtime", () => {
         typeof createMockEditProvider
       >,
     }),
-  ).toThrow("Only synthetic edit providers are supported.");
+  ).toThrow("Unsupported edit provider.");
   expect(editProvider.propose).not.toHaveBeenCalled();
 });
 

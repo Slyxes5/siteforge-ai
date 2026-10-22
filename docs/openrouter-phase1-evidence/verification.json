@@ -1,0 +1,133 @@
+{
+  "milestone": "OpenRouter Phase 1",
+  "verifiedAt": "2026-10-20T03:59:04.774053+00:00",
+  "scope": "local/synthetic only",
+  "model": "nvidia/nemotron-3.5-super-vl:free",
+  "defaultOutputMode": "prompt-json",
+  "realInferenceRequests": {
+    "gemini": 0,
+    "openrouter": 0
+  },
+  "realCredentialsRequestedOrInspected": false,
+  "typecheck": "passed",
+  "productionBuild": "passed",
+  "clientBundleGuard": "passed (Gemini and OpenRouter synthetic sentinel; explicit endpoint/key-name regressions)",
+  "tests": {
+    "ui": {
+      "passed": 158,
+      "failed": 0
+    },
+    "server": {
+      "passed": 358,
+      "failed": 0
+    },
+    "browser": {
+      "startTime": "2026-10-20T03:53:47.791Z",
+      "duration": 54925.858,
+      "expected": 44,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "observability": {
+      "startTime": "2026-10-20T03:54:43.316Z",
+      "duration": 26290.606,
+      "expected": 26,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  },
+  "legacySmokeMock": [
+    {
+      "scenario": "coffee-shop",
+      "evidence": "docs/smoke-observations/mock-c0e1380e-e197-4de1-a64b-96e856c0a07d.json",
+      "exitCode": 0,
+      "generationPosts": 1,
+      "syntheticTransportCalls": 1,
+      "blockCount": 3,
+      "preview": true,
+      "outcome": "success"
+    },
+    {
+      "scenario": "two-block",
+      "evidence": "docs/smoke-observations/mock-e60008a5-7781-48ec-a7a8-0ebd94fdfca4.json",
+      "exitCode": 0,
+      "generationPosts": 1,
+      "syntheticTransportCalls": 1,
+      "blockCount": 2,
+      "preview": true,
+      "outcome": "success"
+    }
+  ],
+  "openrouterSmoke": {
+    "actualCliModesTested": [
+      "disabled",
+      "mock"
+    ],
+    "maxAttempts": 1,
+    "lifetimeOutboundLimit": 1,
+    "http400Retries": 0,
+    "transport": "synthetic only"
+  },
+  "canonicalDelta": "Previously approved additive generation.provider enum openrouter only. No shape/version/storage migration.",
+  "unchangedBoundaries": {
+    "server/gemini-provider.ts": true,
+    "server/model-router.ts": true,
+    "server/routed-generation-provider.ts": true,
+    "server/website-plan-request.ts": true,
+    "src/ai/website-plan.ts": true,
+    "src/ai/generation-content.ts": true,
+    "src/persistence/local-project-store.ts": true,
+    "src/editor/project-adapter.ts": true
+  },
+  "sourceDelta": {
+    "changedExisting": [
+      "src/ai/generation-observation.ts",
+      "src/ai/website-generation.ts",
+      "src/project-schema/project.ts",
+      "server/config.ts",
+      "server/generation-server.ts",
+      "scripts/check-client-bundle.mjs",
+      "scripts/verify-build.mjs"
+    ],
+    "new": [
+      "e2e/openrouter.spec.ts",
+      "server/openrouter-bundle.test.ts",
+      "server/openrouter-cli.test.ts",
+      "server/openrouter-config.test.ts",
+      "server/openrouter-limits.test.ts",
+      "server/openrouter-provider.test.ts",
+      "server/openrouter-provider.ts",
+      "server/openrouter-request.test.ts",
+      "server/openrouter-request.ts",
+      "server/openrouter-settings.test.ts",
+      "server/openrouter-settings.ts",
+      "server/openrouter-smoke-gates.test.ts",
+      "server/openrouter-smoke-start.ts",
+      "server/openrouter-smoke-startup.test.ts",
+      "server/openrouter-smoke-startup.ts",
+      "server/openrouter-telemetry.test.ts",
+      "src/ai/openrouter-provenance.test.ts"
+    ]
+  },
+  "uiEvidence": {
+    "candidate": "openrouter-candidate.png",
+    "savedReloadedEditor": "openrouter-editor.png",
+    "screenshotReviewed": true,
+    "notes": "Hero \u2192 two features \u2192 Contact; TEST MOCK \u2014 not real AI label; contacts not provided. Saved editor displays second project. No UI redesign."
+  },
+  "postTestPorts": {
+    "5178": "occupied (existing frontend untouched)",
+    "5188": "free",
+    "5189": "free"
+  },
+  "remainingRisks": [
+    "No real provider inference/entitlement/account billing validation.",
+    "Native strict structured output on the exact free endpoint is not established; default prompt-json with local validation.",
+    "Free capacity/pricing/latency can change; preserve account free-only guardrails.",
+    "Historical Gemini HTTP400 remains unresolved.",
+    "Pre-OpenRouter app versions reject new OpenRouter provenance; keep updated schema reader when rolling back provider."
+  ],
+  "liveAcceptance": "Separate explicit approval required. Fresh source/build/process/budget preflight and bounded provider-specific observer required; do not reuse the Gemini-only observer blindly."
+}

@@ -1,29 +1,42 @@
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
-export function observerSelection(
-  args: readonly string[],
-): {
-  mode: "mock" | "live-approved";
+export function observerSelection(args: readonly string[]): {
+  mode: "mock" | "mock-routed" | "live-approved" | "live-routed-approved";
   pid?: number;
-  scenario?: "coffee-shop";
+  scenario?: "coffee-shop" | "premium-cafe";
 } | null {
-  const coffee = args.at(-1) === "--scenario=coffee-shop";
-  const selected = coffee ? { scenario: "coffee-shop" as const } : {};
-  if (coffee) args = args.slice(0, -1);
+  const scenarioArg = args.at(-1);
+  const scenario: "coffee-shop" | "premium-cafe" | undefined =
+    scenarioArg === "--scenario=coffee-shop"
+      ? "coffee-shop"
+      : scenarioArg === "--scenario=premium-cafe"
+        ? "premium-cafe"
+        : undefined;
+  const selected = scenario ? { scenario } : {};
+  if (scenario) args = args.slice(0, -1);
   if (args.length === 0) {
-    if (coffee) throw new Error("Observer selection refused");
+    if (scenario) throw new Error("Observer selection refused");
     return null;
   }
   if (args.length === 1 && args[0] === "--mock")
     return { mode: "mock", ...selected };
+  if (args.length === 1 && args[0] === "--mock-routed")
+    return { mode: "mock-routed", ...selected };
   if (
     args.length === 2 &&
-    args[0] === "--live-approved" &&
+    ["--live-approved", "--live-routed-approved"].includes(args[0]) &&
     /^--pid=[1-9][0-9]{0,9}$/.test(args[1])
   ) {
     const pid = Number(args[1].slice(6));
     if (Number.isSafeInteger(pid))
-      return { mode: "live-approved", pid, ...selected };
+      return {
+        mode:
+          args[0] === "--live-routed-approved"
+            ? "live-routed-approved"
+            : "live-approved",
+        pid,
+        ...selected,
+      };
   }
   throw new Error("Observer selection refused");
 }

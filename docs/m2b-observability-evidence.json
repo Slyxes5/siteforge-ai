@@ -1,0 +1,303 @@
+{
+  "suites": [
+    {
+      "file": "results.json",
+      "stats": {
+        "startTime": "2026-10-19T11:18:33.345Z",
+        "duration": 42934.201,
+        "expected": 28,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "file": "observability-results.json",
+      "stats": {
+        "startTime": "2026-10-19T11:19:17.307Z",
+        "duration": 19145.720999999998,
+        "expected": 10,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    }
+  ],
+  "browser_passed": 38,
+  "observations": [
+    {
+      "phase": "terminal",
+      "startedAt": "2026-10-19T11:19:25.061Z",
+      "finishedAt": "2026-10-19T11:19:25.165Z",
+      "durationMs": 104,
+      "requestId": "75321a1c-52ab-4d0e-ad4e-6e49d13800df",
+      "httpStatus": 502,
+      "generationPosts": 1,
+      "uiState": "provider_error",
+      "schemaValidation": "not_attempted",
+      "transportCalls": 1,
+      "blockCount": null,
+      "candidatePreview": false,
+      "serverDurationMs": 3
+    },
+    {
+      "phase": "terminal",
+      "startedAt": "2026-10-19T11:19:27.328Z",
+      "finishedAt": "2026-10-19T11:19:27.404Z",
+      "durationMs": 76,
+      "requestId": "960b80c9-5f7e-4fab-bf24-a5a88c62641e",
+      "httpStatus": 502,
+      "generationPosts": 1,
+      "uiState": "validation_error",
+      "schemaValidation": "invalid",
+      "transportCalls": 1,
+      "blockCount": null,
+      "candidatePreview": false,
+      "serverDurationMs": 3
+    },
+    {
+      "phase": "terminal",
+      "startedAt": "2026-10-19T11:19:26.307Z",
+      "finishedAt": "2026-10-19T11:19:26.399Z",
+      "durationMs": 93,
+      "requestId": "98ffccf9-0554-4b5f-9022-9e98f29ea11a",
+      "httpStatus": 502,
+      "generationPosts": 1,
+      "uiState": "provider_error",
+      "schemaValidation": "not_attempted",
+      "transportCalls": 1,
+      "blockCount": null,
+      "candidatePreview": false,
+      "serverDurationMs": 3
+    },
+    {
+      "phase": "terminal",
+      "startedAt": "2026-10-19T11:19:35.330Z",
+      "finishedAt": "2026-10-19T11:19:35.513Z",
+      "durationMs": 183,
+      "requestId": "5539e087-c80b-49e7-a6df-621d948bad4c",
+      "httpStatus": 200,
+      "generationPosts": 1,
+      "uiState": "timeout",
+      "schemaValidation": "not_attempted",
+      "transportCalls": null,
+      "blockCount": null,
+      "candidatePreview": false,
+      "serverDurationMs": 90107
+    },
+    {
+      "phase": "terminal",
+      "startedAt": "2026-10-19T11:19:28.331Z",
+      "finishedAt": "2026-10-19T11:19:28.452Z",
+      "durationMs": 121,
+      "requestId": "31fa66fc-7981-4b16-9766-98bb4cf0143c",
+      "httpStatus": 502,
+      "generationPosts": 1,
+      "uiState": "validation_error",
+      "schemaValidation": "invalid",
+      "transportCalls": 1,
+      "blockCount": null,
+      "candidatePreview": false,
+      "serverDurationMs": 6
+    },
+    {
+      "phase": "terminal",
+      "startedAt": "2026-10-19T11:19:34.119Z",
+      "finishedAt": "2026-10-19T11:19:34.346Z",
+      "durationMs": 227,
+      "requestId": "127f5538-b768-44a3-b88b-d821426afb7c",
+      "httpStatus": null,
+      "generationPosts": 1,
+      "uiState": "cancelled",
+      "schemaValidation": "not_attempted",
+      "transportCalls": null,
+      "blockCount": null,
+      "candidatePreview": false,
+      "serverDurationMs": 160
+    },
+    {
+      "phase": "terminal",
+      "startedAt": "2026-10-19T11:19:23.685Z",
+      "finishedAt": "2026-10-19T11:19:24.015Z",
+      "durationMs": 330,
+      "requestId": "a4857187-797a-4e45-a8cb-028cf374fb7e",
+      "httpStatus": 200,
+      "generationPosts": 1,
+      "uiState": "success",
+      "schemaValidation": "valid",
+      "transportCalls": 1,
+      "blockCount": 2,
+      "candidatePreview": true,
+      "serverDurationMs": 96
+    },
+    {
+      "phase": "terminal",
+      "startedAt": "2026-10-19T11:19:29.399Z",
+      "finishedAt": "2026-10-19T11:19:30.722Z",
+      "durationMs": 1323,
+      "requestId": "57495339-87b2-4d27-81a7-51a472ed736e",
+      "httpStatus": 504,
+      "generationPosts": 1,
+      "uiState": "timeout",
+      "schemaValidation": "not_attempted",
+      "transportCalls": 1,
+      "blockCount": null,
+      "candidatePreview": false,
+      "serverDurationMs": 1215
+    },
+    {
+      "phase": "terminal",
+      "startedAt": "2026-10-19T11:19:31.751Z",
+      "finishedAt": "2026-10-19T11:19:33.054Z",
+      "durationMs": 1303,
+      "requestId": "80b514a9-a2e5-4b36-90a2-1a7fce55b2c6",
+      "httpStatus": 504,
+      "generationPosts": 1,
+      "uiState": "timeout",
+      "schemaValidation": "not_attempted",
+      "transportCalls": 1,
+      "blockCount": null,
+      "candidatePreview": false,
+      "serverDurationMs": 1215
+    }
+  ],
+  "terminal_events": [
+    {
+      "event": "generation_finish",
+      "requestId": "a4857187-797a-4e45-a8cb-028cf374fb7e",
+      "startedAt": "2026-10-19T11:19:23.889Z",
+      "finishedAt": "2026-10-19T11:19:23.986Z",
+      "durationMs": 97,
+      "outcome": "success",
+      "schemaValidation": "valid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 200,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "75321a1c-52ab-4d0e-ad4e-6e49d13800df",
+      "startedAt": "2026-10-19T11:19:25.128Z",
+      "finishedAt": "2026-10-19T11:19:25.131Z",
+      "durationMs": 3,
+      "outcome": "provider_error",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "providerStatus": 429,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "98ffccf9-0554-4b5f-9022-9e98f29ea11a",
+      "startedAt": "2026-10-19T11:19:26.376Z",
+      "finishedAt": "2026-10-19T11:19:26.380Z",
+      "durationMs": 3,
+      "outcome": "provider_error",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "providerStatus": 500,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "960b80c9-5f7e-4fab-bf24-a5a88c62641e",
+      "startedAt": "2026-10-19T11:19:27.384Z",
+      "finishedAt": "2026-10-19T11:19:27.387Z",
+      "durationMs": 3,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "31fa66fc-7981-4b16-9766-98bb4cf0143c",
+      "startedAt": "2026-10-19T11:19:28.397Z",
+      "finishedAt": "2026-10-19T11:19:28.404Z",
+      "durationMs": 6,
+      "outcome": "validation_error",
+      "schemaValidation": "invalid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 502,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "57495339-87b2-4d27-81a7-51a472ed736e",
+      "startedAt": "2026-10-19T11:19:29.457Z",
+      "finishedAt": "2026-10-19T11:19:30.674Z",
+      "durationMs": 1216,
+      "outcome": "timeout",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 504,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "80b514a9-a2e5-4b36-90a2-1a7fce55b2c6",
+      "startedAt": "2026-10-19T11:19:31.811Z",
+      "finishedAt": "2026-10-19T11:19:33.027Z",
+      "durationMs": 1216,
+      "outcome": "timeout",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 504,
+      "delivery": "finished"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "9c8acd49-edae-47fc-b5bf-d3c2e622e669",
+      "startedAt": "2026-10-19T11:19:34.192Z",
+      "finishedAt": "2026-10-19T11:19:34.320Z",
+      "durationMs": 128,
+      "outcome": "cancelled",
+      "schemaValidation": "not_attempted",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 499,
+      "delivery": "disconnected"
+    },
+    {
+      "event": "generation_finish",
+      "requestId": "5539e087-c80b-49e7-a6df-621d948bad4c",
+      "startedAt": "2026-10-19T11:19:35.392Z",
+      "finishedAt": "2026-10-19T11:19:35.485Z",
+      "durationMs": 92,
+      "outcome": "cancelled",
+      "schemaValidation": "valid",
+      "providerAttempts": 1,
+      "transportCalls": 1,
+      "httpStatus": 200,
+      "delivery": "disconnected"
+    }
+  ],
+  "exactly_once_terminal_events": true,
+  "single_request_launcher_and_lock_unchanged": {
+    "server/smoke-start.ts": true,
+    "server/smoke-startup.ts": true,
+    "server/smoke-startup.test.ts": true,
+    "package-lock.json": true
+  },
+  "ports_after_tests": {
+    "5188": "closed",
+    "5189": "closed"
+  },
+  "legacy_abort_control": {
+    "transport": "synthetic and ignores abort forever",
+    "legacyState": "pending",
+    "revisedState": "cancelled",
+    "externalFetchUsed": false
+  },
+  "real_gemini_calls": 0
+}

@@ -19,10 +19,18 @@ test("coffee scenario selection is explicit and does not relax live/PID gates", 
       "--scenario=coffee-shop",
     ]),
   ).toEqual({ mode: "live-approved", pid: 1234, scenario: "coffee-shop" });
+  expect(
+    observerSelection([
+      "--live-approved",
+      "--pid=1234",
+      "--scenario=premium-cafe",
+    ]),
+  ).toEqual({ mode: "live-approved", pid: 1234, scenario: "premium-cafe" });
   for (const args of [
     ["--scenario=coffee-shop"],
     ["--mock", "--scenario=other"],
     ["--mock", "--scenario=coffee-shop", "--scenario=coffee-shop"],
+    ["--mock", "--scenario=premium-cafe", "--scenario=premium-cafe"],
     ["--live-approved", "--scenario=coffee-shop"],
     ["--live-approved", "--pid=0", "--scenario=coffee-shop"],
   ])
@@ -37,6 +45,31 @@ test("no argument stays disabled; malformed selections are refused", () => {
     ["--live-approved", "--pid=12x"],
     ["--live-approved", "--pid=1234", "--retry"],
     ["--unknown"],
+  ])
+    expect(() => observerSelection(args)).toThrow();
+});
+
+test("routed profile requires explicit mock selection or fresh live approval and PID", () => {
+  expect(
+    observerSelection(["--mock-routed", "--scenario=premium-cafe"]),
+  ).toEqual({ mode: "mock-routed", scenario: "premium-cafe" });
+  expect(
+    observerSelection([
+      "--live-routed-approved",
+      "--pid=1234",
+      "--scenario=premium-cafe",
+    ]),
+  ).toEqual({
+    mode: "live-routed-approved",
+    pid: 1234,
+    scenario: "premium-cafe",
+  });
+  for (const args of [
+    ["--live-routed-approved"],
+    ["--live-routed-approved", "--pid=0"],
+    ["--mock-routed", "--live-approved"],
+    ["--live-approved", "--pid=1234", "--mock-routed"],
+    ["--mock-routed", "--live-routed-approved", "--pid=1234"],
   ])
     expect(() => observerSelection(args)).toThrow();
 });

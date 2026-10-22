@@ -1,12 +1,15 @@
 import { backendPort } from "./config";
 import { createSmokeServer } from "./smoke-startup";
+import { GEMINI_GENERATION_MODEL_ORDER } from "./gemini-generation-profile";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 // Disabled and mock selection never read the environment credential.
 try {
   const args = process.argv.slice(2);
-  if (args.length !== 1 || args[0] !== "--live") {
+  const routed =
+    args.length === 1 && ["--live-routed", "--mock-routed"].includes(args[0]);
+  if (args.length !== 1 || !["--live", "--live-routed"].includes(args[0])) {
     // Remove only the child process copy; never read or alter the parent shell key.
     delete process.env.SITEFORGE_GEMINI_API_KEY;
   }
@@ -18,6 +21,12 @@ try {
     [
       "server/smoke-start.ts",
       "server/smoke-startup.ts",
+      "server/gemini-generation-profile.ts",
+      "server/routed-generation-provider.ts",
+      "server/model-router.ts",
+      "server/model-router-config.ts",
+      "server/gemini-model-catalog.ts",
+      "src/ai/model-routing.ts",
       "server/smoke-transport-audit.ts",
       "server/gemini-provider.ts",
       "server/website-plan-request.ts",
@@ -34,7 +43,14 @@ try {
     pid: process.pid,
     startedAt,
     contract: "website-plan-v1",
-    model: process.env.SITEFORGE_GEMINI_MODEL ?? "gemini-3.5-flash-lite",
+    model: routed
+      ? GEMINI_GENERATION_MODEL_ORDER[0]
+      : (process.env.SITEFORGE_GEMINI_MODEL ?? "gemini-3.5-flash-lite"),
+    models: routed
+      ? [...GEMINI_GENERATION_MODEL_ORDER]
+      : [process.env.SITEFORGE_GEMINI_MODEL ?? "gemini-3.5-flash-lite"],
+    routed,
+    outboundLimit: routed ? 2 : 1,
     sourceFingerprints,
     transportCalls: 0,
     providerStatus: null as number | null,
@@ -61,7 +77,7 @@ try {
   });
   smoke.server.listen(port, "127.0.0.1", () => {
     console.log(
-      `http://127.0.0.1:${port} mode=${smoke.mode} model=${smoke.model} contract=website-plan-v1 pid=${process.pid} maxAttempts=1 outboundLimit=1`,
+      `http://127.0.0.1:${port} mode=${smoke.mode} model=${smoke.model} models=${smoke.models.join(",")} contract=website-plan-v1 pid=${process.pid} maxAttempts=1 outboundLimit=${smoke.outboundLimit} routed=${smoke.routed}`,
     );
     if (smoke.mode === "mock")
       console.log(

@@ -4,12 +4,16 @@ import { editProviderFromEnvironment } from "./edit-provider";
 /** Library startup for owned loopback servers. CLI entrypoint is intentionally separate. */
 export async function startGenerationServer(
   env: NodeJS.ProcessEnv,
-  options: { port?: number; log?: (message: string) => void } = {},
+  options: {
+    port?: number;
+    log?: (message: string) => void;
+    editTransport?: typeof globalThis.fetch;
+  } = {},
 ) {
   const provider = providerFromEnvironment(env);
   const server = createGenerationServer({
     provider,
-    editProvider: editProviderFromEnvironment(env),
+    editProvider: editProviderFromEnvironment(env, options.editTransport),
   });
   await new Promise<void>((done, reject) => {
     server.once("error", reject);

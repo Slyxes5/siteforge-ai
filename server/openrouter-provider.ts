@@ -1,5 +1,6 @@
 import {
   GENERATION_LIMITS,
+  OPENROUTER_GENERATION_LIMITS,
   type WebsiteGenerationProvider,
 } from "../src/ai/website-generation";
 import type { OpenRouterOutputMode } from "./openrouter-request";
@@ -17,6 +18,7 @@ import {
 } from "./openrouter-request";
 import { ProviderError } from "./provider-error";
 import type { GenerationProblem } from "../src/ai/generation-validation";
+import type { ProviderTimings } from "../src/ai/generation-observation";
 function invalid(reason: GenerationProblem["reason"]): ProviderError {
   return new ProviderError(
     reason === "PROVIDER_REFUSAL" ? "REFUSAL" : "INVALID_OUTPUT",
@@ -92,14 +94,14 @@ export function createOpenRouterProvider(
     /[\r\n\x00-\x1f\x7f]/.test(options.apiKey)
   )
     throw new ProviderError("REQUEST_CONTRACT");
-  const timeoutMs = options.timeoutMs ?? GENERATION_LIMITS.timeoutMs;
+  const timeoutMs = options.timeoutMs ?? OPENROUTER_GENERATION_LIMITS.timeoutMs;
   const responseBytes =
     options.responseBytes ?? GENERATION_LIMITS.responseBytes;
   if (
     ![timeoutMs, responseBytes].every(
       (n) => Number.isSafeInteger(n) && n > 0,
     ) ||
-    timeoutMs > GENERATION_LIMITS.totalTimeoutMs ||
+    timeoutMs > OPENROUTER_GENERATION_LIMITS.timeoutMs ||
     responseBytes > GENERATION_LIMITS.responseBytes
   )
     throw new ProviderError("REQUEST_CONTRACT");
@@ -111,6 +113,19 @@ export function createOpenRouterProvider(
     async generate(input, signal, context) {
       signal.throwIfAborted();
       const body = buildOpenRouterRequestBody(input, model, options.outputMode);
+      const started = performance.now();
+      const elapsed = () =>
+        Math.max(0, Math.floor(performance.now() - started));
+      let timings: ProviderTimings | undefined;
+      const reportTiming = (stage: keyof ProviderTimings) => {
+        if (controller.signal.aborted) return;
+        timings = { ...timings, [stage]: elapsed() } as ProviderTimings;
+        try {
+          context?.onProviderTimings?.({ ...timings });
+        } catch {
+          /* metadata only */
+        }
+      };
       const deadline = Date.now() + timeoutMs;
       const controller = new AbortController();
       let response: Response | undefined;
@@ -169,6 +184,7 @@ export function createOpenRouterProvider(
             controller.signal.throwIfAborted();
           }
           checkDeadline();
+          reportTiming("headersMs");
           try {
             context?.onProviderStatus?.(response.status);
           } catch {
@@ -207,6 +223,8 @@ export function createOpenRouterProvider(
             const { done, value } = await reader.read();
             checkDeadline();
             if (done) break;
+            if (value.byteLength > 0 && timings?.firstByteMs === undefined)
+              reportTiming("firstByteMs");
             bytes += value.byteLength;
             if (bytes > responseBytes) {
               discard();
@@ -214,6 +232,7 @@ export function createOpenRouterProvider(
             }
             chunks.push(value);
           }
+          reportTiming("bodyCompleteMs");
           let raw: string;
           try {
             raw = new TextDecoder("utf-8", { fatal: true }).decode(
@@ -223,6 +242,8 @@ export function createOpenRouterProvider(
             throw invalid("MALFORMED_ENVELOPE_JSON");
           }
           const result = { text: content(raw, model) };
+          checkDeadline();
+          reportTiming("responseCompleteMs");
           checkDeadline();
           return result;
         } catch (error) {

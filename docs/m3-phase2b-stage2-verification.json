@@ -1,0 +1,571 @@
+{
+  "branch": "main",
+  "head": "29ae78d",
+  "tests": {
+    "baselineFrontend": {
+      "reportPath": "C:/Users/vrandly/AppData/Local/hermes/cache/scratch/siteforge-stage2-baseline-frontend.json",
+      "passed": 170,
+      "failed": 0,
+      "pending": 0,
+      "files": [
+        {
+          "path": "C:/Projects/siteforge-ai/src/ai/edit-proposal.test.ts",
+          "passed": 46,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/ai/mock-chat-editor.test.ts",
+          "passed": 11,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/ai/structured-edit.test.ts",
+          "passed": 87,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/app/chat-workspace.test.tsx",
+          "passed": 7,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/app/ChatEditor.test.tsx",
+          "passed": 19,
+          "failed": 0
+        }
+      ]
+    },
+    "baselineBackend": {
+      "reportPath": "C:/Users/vrandly/AppData/Local/hermes/cache/scratch/siteforge-stage2-baseline-backend.json",
+      "passed": 97,
+      "failed": 0,
+      "pending": 0,
+      "files": [
+        {
+          "path": "C:/Projects/siteforge-ai/server/edit-provider.test.ts",
+          "passed": 10,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/edit-security.test.ts",
+          "passed": 47,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/edit-server.test.ts",
+          "passed": 40,
+          "failed": 0
+        }
+      ]
+    },
+    "frontend": {
+      "reportPath": "C:/Users/vrandly/AppData/Local/hermes/cache/scratch/siteforge-stage2-frontend.json",
+      "passed": 271,
+      "failed": 0,
+      "pending": 0,
+      "files": [
+        {
+          "path": "C:/Projects/siteforge-ai/src/ai/edit-client.test.ts",
+          "passed": 64,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/ai/edit-proposal.test.ts",
+          "passed": 46,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/ai/mock-chat-editor.test.ts",
+          "passed": 11,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/ai/structured-edit.test.ts",
+          "passed": 87,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/app/chat-workspace.test.tsx",
+          "passed": 8,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/app/ChatEditor.async.test.tsx",
+          "passed": 18,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/app/ChatEditor.http.test.tsx",
+          "passed": 5,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/app/ChatEditor.test.tsx",
+          "passed": 19,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/app/ChatEditor.workspace.test.tsx",
+          "passed": 6,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/app/multi-workspace.test.tsx",
+          "passed": 5,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/src/app/workspace.test.tsx",
+          "passed": 2,
+          "failed": 0
+        }
+      ]
+    },
+    "backend": {
+      "reportPath": "C:/Users/vrandly/AppData/Local/hermes/cache/scratch/siteforge-stage2-backend.json",
+      "passed": 131,
+      "failed": 0,
+      "pending": 0,
+      "files": [
+        {
+          "path": "C:/Projects/siteforge-ai/server/edit-provider.test.ts",
+          "passed": 10,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/edit-security.test.ts",
+          "passed": 47,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/edit-server.test.ts",
+          "passed": 40,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/generation-server.test.ts",
+          "passed": 32,
+          "failed": 0
+        },
+        {
+          "path": "C:/Projects/siteforge-ai/server/start.test.ts",
+          "passed": 2,
+          "failed": 0
+        }
+      ]
+    }
+  },
+  "browser": {
+    "reportPath": "C:/Projects/siteforge-ai/test-results/results.json",
+    "stats": {
+      "startTime": "2026-10-20T17:18:10.484Z",
+      "duration": 34689.276,
+      "expected": 20,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "cases": [
+      {
+        "file": "chat-context.spec.ts",
+        "title": "unreviewed proposal cannot revive after invalid Puck text is restored",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-context.spec.ts",
+        "title": "switching projects discards a unreviewed proposal even when block IDs overlap",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-context.spec.ts",
+        "title": "workspace Reload cancels a unreviewed proposal without changing saved projects",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-context.spec.ts",
+        "title": "reviewed proposal cannot revive after invalid Puck text is restored",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-context.spec.ts",
+        "title": "switching projects discards a reviewed proposal even when block IDs overlap",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-context.spec.ts",
+        "title": "workspace Reload cancels a reviewed proposal without changing saved projects",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-editing.spec.ts",
+        "title": "update: proposal/preview/reject are read-only, Apply drafts, explicit Save/reload preserves IDs and isolation",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-editing.spec.ts",
+        "title": "add, reorder and remove through separate proposals preserve existing IDs and require Save",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-editing.spec.ts",
+        "title": "manual Puck edits invalidate a reviewed proposal without overwriting the draft",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-editing.spec.ts",
+        "title": "a concurrent stored revision prevents Apply and preserves both documents",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-editing.spec.ts",
+        "title": "Puck remains editable after an approved proposal remounts the editor",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-editing.spec.ts",
+        "title": "invalid command and invalid canonical fields fail without writes",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-http.spec.ts",
+        "title": "synthetic HTTP proposal → diff → explicit Preview → Reject or Apply → separate Save/reload preserves IDs and isolation",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-http.spec.ts",
+        "title": "pending synthetic HTTP work exposes Cancel and prevents duplicate submissions",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-http.spec.ts",
+        "title": "in-flight manual edit wins over a late synthetic HTTP response",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-http.spec.ts",
+        "title": "in-flight Save wins over a late synthetic HTTP response",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-http.spec.ts",
+        "title": "project switch discards pending synthetic HTTP output even with overlapping block IDs",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-http.spec.ts",
+        "title": "instruction change and restoration permanently discard the older HTTP result",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-http.spec.ts",
+        "title": "disabled backend never POSTs or falls back automatically; offline commands remain usable",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      },
+      {
+        "file": "chat-http.spec.ts",
+        "title": "host semantic validation rejects ungrounded output after a successful synthetic backend response",
+        "status": "expected",
+        "attempts": 1,
+        "results": [
+          "passed"
+        ]
+      }
+    ],
+    "newHttpCases": 8
+  },
+  "finalDistinctCases": 422,
+  "newFrontendCases": 94,
+  "sourceInventory": [
+    {
+      "path": "src/ai/edit-client.ts",
+      "bytes": 8494,
+      "lines": 286,
+      "sha256": "05cae940feb6a99b8643aaed020fdbc89ac4925f8117f2ef5b7890753e26fdb8"
+    },
+    {
+      "path": "src/ai/edit-client.test.ts",
+      "bytes": 27765,
+      "lines": 788,
+      "sha256": "008a4fa6d74c8d0004fce092a8d219dfcb1388916e555ad409c475a9e8f82c08"
+    },
+    {
+      "path": "src/app/ChatEditor.tsx",
+      "bytes": 13842,
+      "lines": 430,
+      "sha256": "bbc4e9ccc90f881eda7b123cbccd0662a6569c41086aaa683609ce20eb80cf03"
+    },
+    {
+      "path": "src/app/App.tsx",
+      "bytes": 6481,
+      "lines": 195,
+      "sha256": "eee45080444e193ddc8e81cb16682d77ef04c6b53227c91706a6a8b10181026b"
+    },
+    {
+      "path": "src/app/use-project-workspace.ts",
+      "bytes": 9934,
+      "lines": 321,
+      "sha256": "94b19a575fef41a2291cdc146a970b3a5a09bf34a64d6ac6397a2e0f3d128934"
+    },
+    {
+      "path": "src/app/chat-workspace.test.tsx",
+      "bytes": 6508,
+      "lines": 158,
+      "sha256": "3446152d1bf591232a96206584e967015ad9dd3b36250f060c3ffb462f9a6c4f"
+    },
+    {
+      "path": "src/app/ChatEditor.async.test.tsx",
+      "bytes": 12729,
+      "lines": 357,
+      "sha256": "d017fe7abeb9d8c519c1b2d0384eaac7627e32e7c89f05106665b49286c3ae3a"
+    },
+    {
+      "path": "src/app/ChatEditor.http.test.tsx",
+      "bytes": 4561,
+      "lines": 125,
+      "sha256": "eeeacf6a39760188e7242ab60002818e670885d3402ba343ed91ca6350f6d759"
+    },
+    {
+      "path": "src/app/ChatEditor.workspace.test.tsx",
+      "bytes": 7275,
+      "lines": 205,
+      "sha256": "322e8c489fce9e88fd609299c4692d9176fbb7029862f3650fc26b692bfc7308"
+    },
+    {
+      "path": "e2e/chat-http.spec.ts",
+      "bytes": 12969,
+      "lines": 383,
+      "sha256": "0dc7f6e7c90071c64dd983e8f1016ab0e0089e37424104101b374159ef68649a"
+    }
+  ],
+  "stage1": {
+    "sourceHashesMatch": true,
+    "verifiedFiles": [
+      {
+        "path": "src/ai/edit-contract.ts",
+        "sha256": "30272a36ab2aa30483fd01a1235f64377d2b09eb8118250f58fb686e9dac2f1b"
+      },
+      {
+        "path": "server/edit-provider.ts",
+        "sha256": "18e883af8e73736de13a13f666dc030bd141895697b45a42c813e12579a0571f"
+      },
+      {
+        "path": "server/edit-validation.ts",
+        "sha256": "72c6bdc6438d8b552c454700f82974fd5d3bd5355128bd3ee85dd33ee1d026a4"
+      },
+      {
+        "path": "server/edit-server.test.ts",
+        "sha256": "af31a84631726bbba4d268b047bc4638de269653c6ef529a7d6a381e60866020"
+      },
+      {
+        "path": "server/edit-security.test.ts",
+        "sha256": "e39a8da0ed06a0e560bcc904a7d7340f4ac1c2ef6909daf7428a8ab9e48f7b0b"
+      },
+      {
+        "path": "server/edit-provider.test.ts",
+        "sha256": "75134d73e2b2ce6ee5eaeb459c9d808b2b4f3bbd85f2a64e90533d4e4a4f4cb2"
+      },
+      {
+        "path": "server/generation-server.ts",
+        "sha256": "4a1e5b170e8833808aeeac5603d1b52ff6a326748229419988f4149ad36ecfe9"
+      },
+      {
+        "path": "server/startup.ts",
+        "sha256": "7bec494dd0060a8be6c071c3073fe47d6ce4658b2bba83a410d819c93ca89863"
+      }
+    ]
+  },
+  "protectedFilesUnchanged": [
+    "src/ai/structured-edit.ts",
+    "src/ai/edit-proposal.ts",
+    "src/ai/mock-chat-editor.ts",
+    "src/ai/generation-client.ts",
+    "src/ai/generation-runtime.ts",
+    "src/project-schema/project.ts",
+    "server/openrouter-provider.ts",
+    "server/openrouter-request.ts",
+    "server/config.ts"
+  ],
+  "stage2TrackedDiff": {
+    "files": [
+      {
+        "path": "src/app/App.tsx",
+        "added": 8,
+        "deleted": 1
+      },
+      {
+        "path": "src/app/ChatEditor.tsx",
+        "added": 194,
+        "deleted": 18
+      },
+      {
+        "path": "src/app/chat-workspace.test.tsx",
+        "added": 17,
+        "deleted": 0
+      },
+      {
+        "path": "src/app/use-project-workspace.ts",
+        "added": 21,
+        "deleted": 1
+      }
+    ],
+    "added": 240,
+    "deleted": 20
+  },
+  "remainingTestPortListeners": [],
+  "milestone": "M3 Phase 2B — Stage 2: Same-Origin HTTP Client and Asynchronous ChatEditor Integration",
+  "status": "complete; stopped before live-provider implementation and Stage 3",
+  "commands": {
+    "frontend": "./node_modules/.bin/vitest run src/ai/edit-client.test.ts src/ai/structured-edit.test.ts src/ai/edit-proposal.test.ts src/ai/mock-chat-editor.test.ts src/app/ChatEditor.test.tsx src/app/ChatEditor.async.test.tsx src/app/ChatEditor.http.test.tsx src/app/ChatEditor.workspace.test.tsx src/app/chat-workspace.test.tsx src/app/multi-workspace.test.tsx src/app/workspace.test.tsx --silent --reporter=default --reporter=json --outputFile=C:/Users/vrandly/AppData/Local/hermes/cache/scratch/siteforge-stage2-frontend.json",
+    "backend": "./node_modules/.bin/vitest run --config vitest.server.config.ts server/edit-server.test.ts server/edit-security.test.ts server/edit-provider.test.ts server/generation-server.test.ts server/start.test.ts --silent --reporter=default --reporter=json --outputFile=C:/Users/vrandly/AppData/Local/hermes/cache/scratch/siteforge-stage2-backend.json",
+    "browser": "./node_modules/.bin/playwright test e2e/chat-http.spec.ts e2e/chat-editing.spec.ts e2e/chat-context.spec.ts",
+    "typecheck": "npm run typecheck",
+    "build": "npm run build",
+    "bundle": "npm run verify:bundle",
+    "format": "./node_modules/.bin/prettier --check src/ai/edit-client.ts src/ai/edit-client.test.ts src/app/ChatEditor.tsx src/app/App.tsx src/app/use-project-workspace.ts src/app/chat-workspace.test.tsx src/app/ChatEditor.async.test.tsx src/app/ChatEditor.http.test.tsx src/app/ChatEditor.workspace.test.tsx e2e/chat-http.spec.ts",
+    "whitespace": "git diff --check"
+  },
+  "qualityGates": {
+    "typecheck": true,
+    "productionBuild": true,
+    "bundleBoundaryScan": true,
+    "prettier": true,
+    "gitDiffCheck": true,
+    "note": "Git emits LF-to-CRLF policy warnings; no whitespace errors."
+  },
+  "independentReview": {
+    "passed": true,
+    "securityConcerns": [],
+    "logicErrors": [],
+    "suggestions": [],
+    "summary": "Read-only review of the scoped Stage2 production changes and unit tests found no concrete security or logic defects. Offline defaults, fixed same-origin session-protected requests, strict validation, UTF-8 limits, bounded cancellation/deadlines, sanitized HTTP 504 handling, host-owned proposal validation, stale-session invalidation, and explicit Preview/Apply/Reject/Save boundaries are preserved.",
+    "reviewerExecutedTests": false,
+    "reviewerVerifiedBrowserRuntime": false,
+    "parentExecutedAndParsedReports": true
+  },
+  "scope": {
+    "syntheticOnly": true,
+    "liveProviderImplemented": false,
+    "externalAiApiCalls": 0,
+    "paidFallbackAdded": false,
+    "automaticRetriesAdded": false,
+    "canonicalSchemaChanged": false,
+    "automaticPersistenceAdded": false,
+    "globalConfigurationsChanged": false,
+    "existingServicesStoppedOrRestarted": false,
+    "stagedOrCommitted": false,
+    "historical770SuiteRerun": false
+  },
+  "activation": {
+    "defaultMode": "deterministic offline mock",
+    "backendOptIn": [
+      "SITEFORGE_EDIT_PROVIDER=mock",
+      "SITEFORGE_AI_TEST_MODE=true"
+    ],
+    "userOptIn": "Select Synthetic backend (mock, HTTP), then explicitly submit.",
+    "persistentFlagsChanged": false
+  },
+  "browserHarness": {
+    "preflightPorts": [
+      5188,
+      5189
+    ],
+    "preflightListeners": [],
+    "reuseExistingServer": false,
+    "ownedEphemeralProtectedEditBackend": true,
+    "browserUsesSameOriginUrls": true,
+    "routeForwardingToActualBackend": true,
+    "externalAndUnrelatedApiRequestsBlockedAndAssertedAbsent": true,
+    "seedStorageOncePerContext": true,
+    "tracesDisabled": true
+  },
+  "limitations": [
+    "Named synthetic fixture only, not general natural-language AI.",
+    "Stateless backend cannot establish browser draft freshness; host snapshots and editing epochs remain mandatory.",
+    "Cross-tab localStorage checks remain optimistic, not transactions.",
+    "Cancellation does not prove arbitrary provider work stopped; shared admission remains held until settlement.",
+    "Dependent operations cannot reference future added-block IDs.",
+    "Grounding does not prove arbitrary prose truth or interpretation of intent.",
+    "Browser tests use same-origin route forwarding to actual protected synthetic backends; production hosting, remote authentication, and live-provider acceptance were not tested."
+  ],
+  "preexistingUntrackedPreserved": [
+    ".npmrc",
+    "docs/",
+    "utput === STAGED VALIDATION ==="
+  ]
+}
